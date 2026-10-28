@@ -3,7 +3,7 @@
 metadata() >
     name("HelloWorld"),
     eventType("sequence"),
-    repositoryLocal("objects"),
+    repositoryLocal("."),
     object("hello").
 
 instances() >
@@ -40,5 +40,5 @@ event("say-hello") >
     description("Run the Hello World object").
 
 object("hello") >
-    location("${uriLocal}/ttp/hello.sh").
+    location("${uriLocal}/objects/hello/hello.sh").
 
