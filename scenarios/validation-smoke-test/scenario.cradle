@@ -1,0 +1,24 @@
+// Static CI fixture: validate only; never deploy or execute this scenario.
+metadata() >
+    name("ValidationSmokeTest"),
+    eventType("sequence").
+
+instances() >
+    instance("training-host").
+
+instance("training-host") >
+    os("ubuntu", "20.04"),
+    config("linux-python3"),
+    heuristic("cve", "CVE-2021-41773").
+
+networks() >
+    network("training-lan").
+
+network("training-lan") >
+    subnet("10.40.0.0/24"),
+    endpoint("training-host", "10.40.0.10").
+
+events() >
+    preEvent(),
+    mainEvent(),
+    postEvent().

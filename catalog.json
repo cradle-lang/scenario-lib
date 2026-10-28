@@ -4,7 +4,7 @@
     {
       "id": "hello-world",
       "title": "Hello World",
-      "description": "A compact CRADLE scenario combining local and cradle-lib configs, CVEs, and an event object.",
+      "description": "A compact CRADLE scenario combining local and cradle-lib configurations, CVE heuristics, and an event object on one Ubuntu instance.",
       "tags": [
         "hello-world",
         "beginner",
@@ -13,7 +13,21 @@
       "version": "0.1.0",
       "entrypoint": "HelloWorld.cradle",
       "path": "scenarios/hello-world",
+      "draft": true,
       "preview": "preview.svg"
+    },
+    {
+      "id": "validation-smoke-test",
+      "title": "Validation workflow smoke test",
+      "description": "A minimal draft scenario for testing compiler and shared content checks in CI.",
+      "tags": [
+        "Validation",
+        "CI"
+      ],
+      "version": "0.1.0",
+      "entrypoint": "scenario.cradle",
+      "path": "scenarios/validation-smoke-test",
+      "draft": true
     }
   ]
 }

@@ -1,0 +1,84 @@
+name: Validate CRADLE sources, configs and heuristics
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Scenario folder ID (leave empty to check all, including drafts)
+        required: false
+        default: ''
+        type: string
+      revision:
+        description: Source commit, tag or branch (manual runs only)
+        required: true
+        default: main
+        type: string
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout validation tooling
+        uses: actions/checkout@v4
+        with:
+          path: tooling
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.repository.default_branch || github.sha }}
+      - name: Checkout source to validate
+        uses: actions/checkout@v4
+        with:
+          path: content
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.revision || github.sha }}
+      - name: Checkout current shared configuration and heuristic library
+        uses: actions/checkout@v4
+        with:
+          repository: cradle-lang/cradle-lib
+          path: cradle-lib
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --prefix tooling
+      - name: Test configuration and heuristic reference checks
+        run: npm run test:validation --prefix tooling
+      - name: Check library metadata
+        run: node --input-type=module -e "import {readLibrary} from './tooling/scripts/check-library.mjs'; await readLibrary('./content');"
+      - name: Install CradleXC from the official APT repository
+        run: |
+          echo 'deb [trusted=yes] https://repo.cradle-lang.org/apt/ /' | sudo tee /etc/apt/sources.list.d/cradle.list
+          sudo apt-get update
+          sudo apt-get install -y cxc-core
+          cxc --version
+      - name: Validate source syntax, structure, configs and heuristics
+        env:
+          SCENARIO: ${{ inputs.scenario }}
+        run: |
+          node tooling/scripts/validate-sources.mjs \
+            --source "$GITHUB_WORKSPACE/content" \
+            --library "$GITHUB_WORKSPACE/cradle-lib" \
+            --scenario "$SCENARIO" \
+            --output "$GITHUB_WORKSPACE/scenario-output"
+      - name: Export the two-file website snapshot
+        run: |
+          export SOURCE_ROOT="$GITHUB_WORKSPACE/content"
+          export SOURCE_REVISION="$(git -C content rev-parse HEAD)"
+          node tooling/scripts/export-website.mjs
+      - name: Upload website handoff bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-scenarios
+          path: tooling/website-export/bundle.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - name: Upload validation report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-validation
+          path: |
+            scenario-output/validation.json
+            scenario-output/validation.md
+          if-no-files-found: warn

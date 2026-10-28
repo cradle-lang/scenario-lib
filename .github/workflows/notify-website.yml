@@ -1,0 +1,54 @@
+name: Notify website after validated main update
+on:
+  workflow_run:
+    workflows: ['Validate scenarios']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  notify:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify website dispatch credentials
+        env:
+          WEBSITE_SYNC_TOKEN: ${{ secrets.WEBSITE_SYNC_TOKEN }}
+        run: |
+          if [ -z "$WEBSITE_SYNC_TOKEN" ]; then
+            echo 'Configure WEBSITE_SYNC_TOKEN with Contents write permission on cradle-lang/cradle-lang.github.io.'
+            exit 1
+          fi
+      - name: Verify this is the latest validated main snapshot
+        id: snapshot
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const {data: branch} = await github.rest.repos.getBranch({...context.repo, branch: 'main'});
+            if (branch.commit.sha !== run.head_sha) {
+              core.notice('Skipping an older validated main revision.');
+              core.setOutput('current', 'false');
+              return;
+            }
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: run.id});
+            if (!artifacts.some(item => item.name === 'website-scenarios' && !item.expired)) throw new Error('Validated run has no website-scenarios bundle.');
+            core.setOutput('current', 'true');
+      - name: Ask the website to open a scenario sync PR
+        if: steps.snapshot.outputs.current == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.WEBSITE_SYNC_TOKEN }}
+          script: |
+            const run = context.payload.workflow_run;
+            await github.rest.repos.createDispatchEvent({
+              owner: 'cradle-lang', repo: 'cradle-lang.github.io',
+              event_type: 'scenario-library-updated',
+              client_payload: {source_repository: context.payload.repository.full_name, source_sha: run.head_sha, source_run_id: run.id}
+            });
+            await core.summary.addHeading('Website review requested').addRaw(`Validated source: ${run.head_sha}\n\nThe website receiver will open/update a PR containing scenario.cradle and index.md only.`).write();

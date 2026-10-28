@@ -5,3 +5,16 @@ out/
 __pycache__/
 *.py[cod]
 
+node_modules/
+dist/
+scenario-output/
+.library-import-test-*/
+.reference-cti-demo/
+.reference-cradle-lib/
+.website-sync/
+website-export/
+.env
+.env.*
+!.env.example
+
+.ci/

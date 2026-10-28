@@ -1,28 +1,61 @@
 name: Validate scenarios
-
 on:
   push:
   pull_request:
-
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Scenario folder ID (empty checks all scenarios)
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
-
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+    timeout-minutes: 15
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: cradle-lang/cradle-lib
+          path: .ci/cradle-lib
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check articles, assets, catalogue and script tests
+        run: npm run check
       - name: Install CXC
         run: |
-          echo "deb [trusted=yes] https://repo.cradle-lang.org/apt/ /" \
-            | sudo tee /etc/apt/sources.list.d/cradle-lang.list
+          echo 'deb [trusted=yes] https://repo.cradle-lang.org/apt/ /' | sudo tee /etc/apt/sources.list.d/cradle-lang.list
           sudo apt-get update
           sudo apt-get install -y cxc-core
-
-      - name: Validate the scenario catalogue
-        run: python3 scripts/validate.py
-
+          cxc --version
+      - name: Validate CRADLE syntax, structure, configs and heuristics
+        env:
+          SCENARIO: ${{ inputs.scenario }}
+        run: npm run library:validate -- --library .ci/cradle-lib --scenario "$SCENARIO"
+      - name: Export the two-file website snapshot
+        run: npm run library:export-website
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website-scenarios
+          path: website-export/bundle.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - name: Upload the validation report even on scenario failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-validation
+          path: |
+            scenario-output/validation.json
+            scenario-output/validation.md
+          if-no-files-found: warn

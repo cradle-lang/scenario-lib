@@ -1,0 +1,26 @@
+{
+  "name": "cradle-scenario-lib",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "library:new": "node scripts/new-library-entry.mjs",
+    "library:describe": "node scripts/generate-scenario-article.mjs",
+    "library:validate": "node scripts/validate-sources.mjs",
+    "library:export-website": "node scripts/export-website.mjs",
+    "test:validation": "node --test scripts/config-references.test.mjs scripts/heuristic-references.test.mjs",
+    "library:check": "node scripts/check-library.mjs",
+    "library:catalog": "node scripts/check-library.mjs --catalog",
+    "test": "node --test scripts/*.test.mjs",
+    "check": "npm run library:check && npm run catalog:check && npm test",
+    "catalog:check": "node scripts/catalog.mjs",
+    "catalog:update": "node scripts/catalog.mjs --update"
+  },
+  "dependencies": {
+    "mdast-util-from-markdown": "^2.1.0",
+    "yaml": "^2.9.1"
+  }
+}

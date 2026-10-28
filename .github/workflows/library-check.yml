@@ -1,0 +1,28 @@
+name: Check library contributions
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run library:catalog
+      - uses: actions/upload-artifact@v4
+        with:
+          name: library-catalog
+          path: dist/catalog.json
+          if-no-files-found: error
