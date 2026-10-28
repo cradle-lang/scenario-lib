@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "id": "hello-world",
+      "title": "Hello World",
+      "description": "A minimal CRADLE scenario with one Ubuntu VM, one local config, and one event object.",
+      "tags": [
+        "hello-world",
+        "beginner",
+        "ubuntu"
+      ],
+      "version": "0.1.0",
+      "entrypoint": "HelloWorld.cradle",
+      "path": "scenarios/hello-world",
+      "preview": "preview.svg"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+// Minimal CRADLE scenario: provision one VM and run one local object.
+
+metadata() >
+    name("HelloWorld"),
+    eventType("sequence"),
+    repositoryLocal("objects"),
+    object("hello").
+
+instances() >
+    instance("hello").
+
+instance("hello") >
+    os("ubuntu", "22.04"),
+    config("hello-world"),
+    object("hello").
+
+networks() >
+    network("lan").
+
+network("lan") >
+    subnet("10.42.0.0/24"),
+    endpoint("hello", "10.42.0.10").
+
+events() >
+    preEvent(),
+    mainEvent(),
+    postEvent().
+
+mainEvent() >
+    event("say-hello").
+
+event("say-hello") >
+    instance("hello"),
+    needRoot(false),
+    subject("bash", ""),
+    runObject("hello", ""),
+    pauseBeforeRun(0),
+    pauseAfterRun(0),
+    scheduleExecution("2026-01-01T00:00:00+00:00"),
+    description("Run the Hello World object").
+
+object("hello") >
+    location("${uriLocal}/ttp/hello.sh").
+

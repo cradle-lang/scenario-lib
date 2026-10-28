@@ -1,0 +1,28 @@
+name: Validate scenarios
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Install CXC
+        run: |
+          echo "deb [trusted=yes] https://repo.cradle-lang.org/apt/ /" \
+            | sudo tee /etc/apt/sources.list.d/cradle-lang.list
+          sudo apt-get update
+          sudo apt-get install -y cxc-core
+
+      - name: Validate the scenario catalogue
+        run: python3 scripts/validate.py
+
