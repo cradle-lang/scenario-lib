@@ -4,7 +4,7 @@
     {
       "id": "hello-world",
       "title": "Hello World",
-      "description": "A minimal CRADLE scenario combining local and cradle-lib configs, heuristics, and an event object.",
+      "description": "A compact CRADLE scenario combining local and cradle-lib configs, CVEs, and an event object.",
       "tags": [
         "hello-world",
         "beginner",

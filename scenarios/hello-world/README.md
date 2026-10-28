@@ -2,7 +2,7 @@
 schema_version: 1
 id: hello-world
 title: Hello World
-description: A minimal CRADLE scenario combining local and cradle-lib configs, heuristics, and an event object.
+description: A compact CRADLE scenario combining local and cradle-lib configs, CVEs, and an event object.
 tags:
   - hello-world
   - beginner
@@ -14,14 +14,14 @@ preview: preview.svg
 
 # Hello World
 
-This scenario is the smallest end-to-end example in the catalogue. It
+This scenario is a compact end-to-end example in the catalogue. It
 demonstrates:
 
-- one Ubuntu instance on a private network
+- one Ubuntu 20.04 instance on a private network
 - a scenario-local `config` that writes a readiness marker
 - a reused `linux-unzip` config from remote `cradle-lib`
-- a scenario-local `ttp/T1059.004` heuristic
-- a reused `ttp/T1105` heuristic from remote `cradle-lib`
+- a scenario-local `cve/CVE-2021-44228` heuristic
+- a reused `cve/CVE-2017-7494` heuristic from remote `cradle-lib`
 - a scenario-local `object` executed by `mainEvent()`
 - a testbed-independent scenario with no committed deployment profile
 
@@ -56,6 +56,6 @@ Run the boot, provision, and event commands printed by CXC. After provisioning,
 the guest contains `/opt/cradle/hello-world/ready.txt`. Running the event also
 creates `/tmp/hello-world-event.txt`.
 
-The remote `T1105` heuristic downloads the AVML binary during provisioning, so
-the target VM needs network access to GitHub at that stage.
+Both CVE heuristics use Docker images downloaded during provisioning, so the
+target VM needs network access at that stage.
 

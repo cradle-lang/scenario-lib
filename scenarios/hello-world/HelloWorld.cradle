@@ -10,11 +10,11 @@ instances() >
     instance("hello").
 
 instance("hello") >
-    os("ubuntu", "22.04"),
+    os("ubuntu", "20.04"),
     config("hello-world"),
     config("linux-unzip"),
-    heuristic("ttp", "T1059.004"),
-    heuristic("ttp", "T1105"),
+    heuristic("cve", "CVE-2021-44228"),
+    heuristic("cve", "CVE-2017-7494"),
     object("hello").
 
 networks() >
