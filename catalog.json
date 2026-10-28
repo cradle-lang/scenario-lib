@@ -17,6 +17,20 @@
       "preview": "preview.svg"
     },
     {
+      "id": "railway",
+      "title": "Railway PR validation example",
+      "description": "A Railway ICS topology imported to exercise pull request metadata, compiler and module validation.",
+      "tags": [
+        "Railway",
+        "ICS",
+        "Validation"
+      ],
+      "version": "0.1.0",
+      "entrypoint": "scenario.cradle",
+      "path": "scenarios/railway",
+      "draft": true
+    },
+    {
       "id": "validation-smoke-test",
       "title": "Validation workflow smoke test",
       "description": "A minimal draft scenario for testing compiler and shared content checks in CI.",

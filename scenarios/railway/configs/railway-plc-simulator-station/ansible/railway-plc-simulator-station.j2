@@ -1,0 +1,50 @@
+    - name: Create railway-plc-simulator-station role directory
+      ansible.builtin.file:
+        path: /opt/railway/roles/plc-station
+        state: directory
+        mode: "0755"
+      become: yes
+
+    - name: Install railway-plc-simulator-station files
+      ansible.builtin.copy:
+        src: "{{ config_asset_dir }}/files/"
+        dest: /opt/railway/roles/plc-station/
+        mode: preserve
+      become: yes
+
+    - name: Install railway-plc-simulator-station systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Railway railway-plc-station
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/opt/railway/roles/plc-station
+          Environment=PYTHONPATH=/opt/railway/lib:/opt/railway/runtime
+          ExecStart=/usr/bin/python3 /opt/railway/roles/plc-station/plcSimulatorStation.py
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/railway-plc-station.service
+        mode: "0644"
+      become: yes
+
+    - name: Start railway-plc-simulator-station
+      ansible.builtin.systemd:
+        name: railway-plc-station
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+      become: yes
+
+    - name: Verify railway-plc-simulator-station network port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 503
+        timeout: 60

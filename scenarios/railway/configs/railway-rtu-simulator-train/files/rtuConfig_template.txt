@@ -1,0 +1,24 @@
+# This is the config file template for the module <rtuSimulatorTrain.py>
+# Setup the parameter with below format (every line follow <key>:<value> format, the
+# key can not be changed):
+
+#-----------------------------------------------------------------------------
+# Set the master RTU's name 
+RTU_NAME:RTU-01-10
+
+#-----------------------------------------------------------------------------
+# Define physical world simulator IP
+RW_IP:127.0.0.1
+
+# Define physical world simulator connection port
+RW_PORT:3001
+
+# Define RTU clock interval
+CLK_INT:2
+
+#-----------------------------------------------------------------------------
+# Define Siemens-S7Comm host IP, use 0.0.0.0 or localhost
+S7COMM_IP:0.0.0.0
+
+# Define Siemens-S7Comm host Port, normally use 102
+S7COMM_PORT:102

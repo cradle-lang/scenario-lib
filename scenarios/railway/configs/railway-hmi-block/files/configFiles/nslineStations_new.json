@@ -1,0 +1,50 @@
+[
+    {
+        "id": "Argon",
+        "pos": [
+            360,
+            450
+        ],
+        "signalLayout": 3
+    },
+    {
+        "id": "Brindle",
+        "pos": [
+            430,
+            50
+        ],
+        "signalLayout": 2
+    },
+    {
+        "id": "Corvus",
+        "pos": [
+            1040,
+            50
+        ],
+        "signalLayout": 2
+    },
+    {
+        "id": "Draxon",
+        "pos": [
+            980,
+            300
+        ],
+        "signalLayout": 3
+    },
+    {
+        "id": "Elvora",
+        "pos": [
+            750,
+            600
+        ],
+        "signalLayout": 3
+    },
+    {
+        "id": "Frostel",
+        "pos": [
+            550,
+            100
+        ],
+        "signalLayout": 3
+    }
+]

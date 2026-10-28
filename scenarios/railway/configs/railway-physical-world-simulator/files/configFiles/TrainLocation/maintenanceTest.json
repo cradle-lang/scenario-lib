@@ -1,0 +1,108 @@
+{
+    "weline": [
+        {
+            "id": "we01",
+            "head": [
+                50,
+                200
+            ],
+            "nextPtIdx": 1,
+            "len": 5
+        },
+        {
+            "id": "we02",
+            "head": [
+                460,
+                600
+            ],
+            "nextPtIdx": 7,
+            "len": 5
+        },
+        {
+            "id": "we03",
+            "head": [
+                1500,
+                400
+            ],
+            "nextPtIdx": 3,
+            "len": 5
+        },
+        {
+            "id": "we04",
+            "head": [
+                800,
+                850
+            ],
+            "nextPtIdx": 11,
+            "len": 5
+        }
+    ],
+    "nsline": [
+        {
+            "id": "ns01",
+            "head": [
+                1160,
+                50
+            ],
+            "nextPtIdx": 1,
+            "len": 4
+        },
+        {
+            "id": "ns02",
+            "head": [
+                1100,
+                300
+            ],
+            "nextPtIdx": 3,
+            "len": 4
+        },
+        {
+            "id": "ns03",
+            "head": [
+                600,
+                100
+            ],
+            "nextPtIdx": 7,
+            "len": 4
+        }
+    ],
+    "ccline": [
+        {
+            "id": "cc01",
+            "head": [
+                1000,
+                200
+            ],
+            "nextPtIdx": 1,
+            "len": 6
+        },
+        {
+            "id": "cc02",
+            "head": [
+                1300,
+                700
+            ],
+            "nextPtIdx": 3,
+            "len": 6
+        },
+        {
+            "id": "cc03",
+            "head": [
+                300,
+                700
+            ],
+            "nextPtIdx": 3,
+            "len": 6
+        }
+    ],
+    "mtline": [
+        {
+            "id": "mt01",
+            "head": [
+                600, 320
+            ],
+            "nextPtIdx": 2,
+            "len": 5
+        }
+    ]
+}

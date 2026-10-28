@@ -1,0 +1,6 @@
+    - name: Install Railway PyArmor runtime
+      ansible.builtin.copy:
+        src: "{{ config_asset_dir }}/files/pyarmor_runtime_006342"
+        dest: /opt/railway/runtime/
+        mode: preserve
+      become: yes
