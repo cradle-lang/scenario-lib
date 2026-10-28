@@ -1,0 +1,10 @@
+    - name: T1059.004 | Record the local Hello World heuristic
+      ansible.builtin.copy:
+        dest: /opt/cradle/hello-world/heuristic.txt
+        content: |
+          framework=ttp
+          value=T1059.004
+          source=scenario-lib
+        owner: root
+        group: root
+        mode: "0644"

@@ -12,6 +12,9 @@ instances() >
 instance("hello") >
     os("ubuntu", "22.04"),
     config("hello-world"),
+    config("linux-unzip"),
+    heuristic("ttp", "T1059.004"),
+    heuristic("ttp", "T1105"),
     object("hello").
 
 networks() >

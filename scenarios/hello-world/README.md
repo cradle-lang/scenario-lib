@@ -2,7 +2,7 @@
 schema_version: 1
 id: hello-world
 title: Hello World
-description: A minimal CRADLE scenario with one Ubuntu VM, one local config, and one event object.
+description: A minimal CRADLE scenario combining local and cradle-lib configs, heuristics, and an event object.
 tags:
   - hello-world
   - beginner
@@ -19,6 +19,9 @@ demonstrates:
 
 - one Ubuntu instance on a private network
 - a scenario-local `config` that writes a readiness marker
+- a reused `linux-unzip` config from remote `cradle-lib`
+- a scenario-local `ttp/T1059.004` heuristic
+- a reused `ttp/T1105` heuristic from remote `cradle-lib`
 - a scenario-local `object` executed by `mainEvent()`
 - a testbed-independent scenario with no committed deployment profile
 
@@ -52,4 +55,7 @@ cxc build --output build
 Run the boot, provision, and event commands printed by CXC. After provisioning,
 the guest contains `/opt/cradle/hello-world/ready.txt`. Running the event also
 creates `/tmp/hello-world-event.txt`.
+
+The remote `T1105` heuristic downloads the AVML binary during provisioning, so
+the target VM needs network access to GitHub at that stage.
 
