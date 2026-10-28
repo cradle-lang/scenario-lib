@@ -40,5 +40,5 @@ event("say-hello") >
     description("Run the Hello World object").
 
 object("hello") >
-    location("${uriLocal}/objects/hello/hello.sh").
+    location("${uriLocal}/objects/artifact/hello.sh").
 
