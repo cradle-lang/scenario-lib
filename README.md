@@ -488,17 +488,26 @@ workflow **`.github/workflows/validate.yml`**. If it still trusts the earlier
 `mashmllo/scenario_library` repository, update both its run allowlist and bundle
 importer before enabling this handoff.
 
-| Repository | Actions secret | Required access |
+Use one token, stored as **`CRADLE_LANG_TOKEN` in both repositories**:
+
+| Repository containing the secret | Actions secret | Token access |
 | --- | --- | --- |
-| `cradle-lang/scenario-lib` | `WEBSITE_SYNC_TOKEN` | Contents write on `cradle-lang/cradle-lang.github.io`, for repository dispatch. |
-| `cradle-lang/cradle-lang.github.io` | `SCENARIO_LIBRARY_READ_TOKEN` | Actions read and Contents read on `cradle-lang/scenario-lib`, for run verification and artifact download. |
-| Website, optional | `WEBSITE_PR_TOKEN` | Contents write and Pull requests write on the website, for the review PR. |
+| `cradle-lang/scenario-lib` | `CRADLE_LANG_TOKEN` | Both the source and website repositories |
+| `cradle-lang/cradle-lang.github.io` | `CRADLE_LANG_TOKEN` | Both the source and website repositories |
+
+For the selected repositories, configure Contents: Read and write,
+Pull requests: Read and write, Metadata: Read-only, and Actions: Read and write.
+The same token handles notification dispatch, source verification/artifact download,
+and pushing the website sync branch/opening its PR. No separate
+`WEBSITE_SYNC_TOKEN`, `SCENARIO_LIBRARY_READ_TOKEN` or `WEBSITE_PR_TOKEN` is needed.
+Repository secrets are scoped to one repository, so storing it in the website
+alone does not make it available to the source repository. An organization secret
+with access to both repositories is an alternative.
 
 Configure these under **Settings → Secrets and variables → Actions** in the
 named repositories. They are GitHub credentials, separate from the LLM `.env`.
-Do not commit their values. With the receiver's built-in `GITHUB_TOKEN` fallback,
-enable bot-created PRs in the website's Actions settings; GitHub may require
-approval to run checks on those PRs. The optional PR token supports automatic CI.
+Do not commit their values. The receiver uses `CRADLE_LANG_TOKEN` to push the review branch and open its PR,
+allowing the resulting PR to trigger the website CI.
 
 Merge/configure the website receiver before activating source notifications.
 To retry, rerun the notification workflow or use the website receiver's manual
