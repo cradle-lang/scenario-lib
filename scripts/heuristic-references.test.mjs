@@ -12,14 +12,16 @@ async function fixture(t) {
   t.after(() => rm(root, {recursive: true, force: true}));
   const entry = path.join(root, 'source/scenarios/example');
   const library = path.join(root, 'shared');
+  const cveLibrary = path.join(root, 'shared-cve');
+  await mkdir(cveLibrary);
   await mkdir(entry, {recursive: true});
   for (const folder of ['configs', 'heuristics']) await mkdir(path.join(library, folder), {recursive: true});
   await writeFile(path.join(entry, 'README.md'), '---\nid: example\ntitle: Example\ndescription: Example\nentrypoint: scenario.cradle\n---\n');
-  return {root, entry, library, source: path.join(root, 'source')};
+  return {root, entry, library, cveLibrary, source: path.join(root, 'source')};
 }
 const reference = {framework: 'cve', value: 'CVE-2021-41773'};
-async function heuristic(base, {framework = 'cve', value = 'CVE-2021-41773', configs = ['linux-auditd'], ...fields} = {}) {
-  const directory = path.join(base, framework, value);
+async function heuristic(base, {framework = 'cve', value = 'CVE-2021-41773', configs = ['linux-auditd'], flat = false, ...fields} = {}) {
+  const directory = path.join(base, ...(flat ? [] : [framework]), value);
   await mkdir(path.join(directory, 'ansible'), {recursive: true});
   await writeFile(path.join(directory, 'ansible', `${value}.j2`), '- name: Set up heuristic\n');
   await writeFile(path.join(directory, 'manifest.json'), JSON.stringify({framework, value, os: 'ubuntu', os_version: '20.04', configs, ...fields}));
@@ -45,10 +47,10 @@ test('rejects traversal and nonliteral heuristic arguments before looking up con
 });
 
 test('prefers bundled heuristic modules and reports absent shared modules', async (t) => {
-  const {entry, library} = await fixture(t);
-  await heuristic(path.join(library, 'heuristics'));
+  const {entry, library, cveLibrary} = await fixture(t);
+  await heuristic(cveLibrary, {flat: true});
   await heuristic(path.join(entry, 'heuristics'), {configs: ['local-dependency']});
-  const result = await resolveHeuristicReferences(entry, library, [reference, reference, {framework: 'ttp', value: 'T1105'}]);
+  const result = await resolveHeuristicReferences(entry, library, [reference, reference, {framework: 'ttp', value: 'T1105'}], cveLibrary);
   assert.equal(result.length, 2);
   assert.equal(result[0].source, 'scenario/heuristics');
   assert.deepEqual(result[0].configs, ['local-dependency']);
@@ -57,10 +59,10 @@ test('prefers bundled heuristic modules and reports absent shared modules', asyn
 });
 
 test('rejects malformed/mismatched manifests, incomplete OS pairs and missing templates without fallback', async (t) => {
-  const {entry, library} = await fixture(t);
-  await heuristic(path.join(library, 'heuristics'));
+  const {entry, library, cveLibrary} = await fixture(t);
+  await heuristic(cveLibrary, {flat: true});
   const directory = await heuristic(path.join(entry, 'heuristics'));
-  const resolve = async () => (await resolveHeuristicReferences(entry, library, [reference]))[0];
+  const resolve = async () => (await resolveHeuristicReferences(entry, library, [reference], cveLibrary))[0];
   await writeFile(path.join(directory, 'manifest.json'), '{invalid json');
   assert.match((await resolve()).error, /invalid manifest/);
   await writeFile(path.join(directory, 'manifest.json'), JSON.stringify({...reference, framework: 'ttp', configs: []}));
@@ -78,26 +80,58 @@ test('rejects malformed/mismatched manifests, incomplete OS pairs and missing te
 });
 
 test('supports classification manifests with no OS/config requirements', async (t) => {
-  const {entry, library} = await fixture(t);
-  const directory = await heuristic(path.join(library, 'heuristics'), {os: null, os_version: null, configs: []});
+  const {entry, library, cveLibrary} = await fixture(t);
+  const directory = await heuristic(cveLibrary, {flat: true, os: null, os_version: null, configs: []});
   const manifest = path.join(directory, 'manifest.json');
   const data = JSON.parse(await readFile(manifest, 'utf8'));
   delete data.configs;
   await writeFile(manifest, JSON.stringify(data));
-  const [result] = await resolveHeuristicReferences(entry, library, [reference]);
+  const [result] = await resolveHeuristicReferences(entry, library, [reference], cveLibrary);
   assert.equal(result.error, null);
   assert.deepEqual(result.configs, []);
   assert.equal(result.manifest.os, null);
 });
 
+test('routes shared CVEs to the flat CVE repository and TTPs to cradle-lib only', async (t) => {
+  const {root, entry, library, cveLibrary, source} = await fixture(t);
+  const ttp = {framework: 'ttp', value: 'T1105'};
+  await heuristic(path.join(library, 'heuristics'), {configs: ['wrong-cve-source']});
+  await heuristic(cveLibrary, {flat: true, configs: []});
+  await heuristic(path.join(library, 'heuristics'), {...ttp, configs: []});
+  await heuristic(path.join(cveLibrary, 'heuristics'), {...ttp, configs: ['wrong-ttp-source']});
+  const resolve = () => resolveHeuristicReferences(entry, library, [reference, ttp], cveLibrary);
+  const [cveResult, ttpResult] = await resolve();
+  assert.equal(cveResult.source, 'cradle-lib-cve');
+  assert.equal(ttpResult.source, 'cradle-lib/heuristics');
+  assert.deepEqual(cveResult.configs, []);
+  assert.deepEqual(ttpResult.configs, []);
+
+  await writeFile(path.join(entry, 'scenario.cradle'), 'instance("pc") > heuristic("cve", "CVE-2021-41773"), heuristic("ttp", "T1105").');
+  const output = path.join(root, 'output');
+  const result = await validateSources({sourceRoot: source, libraryRoot: library, cveLibraryRoot: cveLibrary, output, run: () => ({status: 0, stdout: 'ok\n'})});
+  assert.equal(result.failed, 0);
+  const shared = path.join(output, 'example/compiler-context/shared-heuristics');
+  for (const {framework, value} of [reference, ttp]) {
+    const manifest = JSON.parse(await readFile(path.join(shared, framework, value, 'manifest.json'), 'utf8'));
+    assert.deepEqual(manifest.configs, []);
+  }
+  assert.match(result.markdown, /cradle-lib-cve revision:/);
+  assert.ok(result.report.cveLibraryRevision);
+
+  await rm(path.join(cveLibrary, reference.value), {recursive: true});
+  assert.match((await resolve())[0].error, /Missing heuristic: cve\//);
+  await rm(path.join(library, 'heuristics/ttp'), {recursive: true});
+  assert.match((await resolve())[1].error, /Missing heuristic: ttp\//);
+});
+
 test('fails on configs implied by heuristic manifests and records dependency provenance', async (t) => {
-  const {root, entry, library, source} = await fixture(t);
+  const {root, entry, library, cveLibrary, source} = await fixture(t);
   await writeFile(path.join(entry, 'scenario.cradle'), 'instance("pc") > heuristic("cve", "CVE-2021-41773").');
-  await heuristic(path.join(library, 'heuristics'));
-  const options = {sourceRoot: source, libraryRoot: library, output: path.join(root, 'output'), run: () => ({status: 0, stdout: 'ok\n'})};
+  await heuristic(cveLibrary, {flat: true});
+  const options = {sourceRoot: source, libraryRoot: library, cveLibraryRoot: cveLibrary, output: path.join(root, 'output'), run: () => ({status: 0, stdout: 'ok\n'})};
   const result = await validateSources(options);
   assert.equal(result.failed, 1);
-  assert.equal(result.report.scenarios[0].heuristics[0].source, 'cradle-lib/heuristics');
+  assert.equal(result.report.scenarios[0].heuristics[0].source, 'cradle-lib-cve');
   assert.match(result.report.scenarios[0].errors.join(' '), /Missing config: linux-auditd/);
   assert.deepEqual(result.report.scenarios[0].configs[0].requiredBy, ['heuristic cve/CVE-2021-41773']);
   assert.match(result.markdown, /\| Heuristic \|/);
@@ -105,5 +139,6 @@ test('fails on configs implied by heuristic manifests and records dependency pro
   await writeFile(path.join(library, 'configs/linux-auditd/ansible/linux-auditd.j2'), '- name: Audit\n');
   assert.equal((await validateSources(options)).failed, 0);
   const config = await readFile(path.join(root, 'output/example/compiler-context/config.toml'), 'utf8');
-  assert.ok(config.includes(JSON.stringify(path.join(library, 'heuristics'))));
+  assert.ok(config.includes(JSON.stringify(path.join(root, 'output/example/compiler-context/shared-heuristics'))));
+  assert.equal(await readFile(path.join(root, 'output/example/compiler-context/shared-heuristics/cve', reference.value, 'manifest.json'), 'utf8'), await readFile(path.join(cveLibrary, reference.value, 'manifest.json'), 'utf8'));
 });

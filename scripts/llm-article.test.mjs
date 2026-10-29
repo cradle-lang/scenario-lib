@@ -77,15 +77,29 @@ test('collects source/readme/scripts with image names only and excludes TOML, hi
   const {directory} = await fixture(t);
   const context = await collectScenarioContext(directory);
   assert.ok(context.inventory.includes('image.png'));
+  assert.deepEqual(context.images, ['image.png']);
   assert.ok(!context.inventory.includes('cradle.toml'));
   assert.ok(!context.inventory.includes('.env'));
   assert.ok(context.contents.some((item) => item.path === 'scenario.cradle'));
+  assert.ok(context.contents.some((item) => item.path === 'README.md' && item.text === 'Railway exercise.'));
   assert.ok(context.contents.some((item) => item.path === 'scripts/setup.sh'));
   assert.ok(!context.contents.some((item) => /\.(png|bin)$/.test(item.path)));
   await writeFile(path.join(directory, 'README.md'), '\\"'.repeat(30000));
   const bounded = await collectScenarioContext(directory, 5000);
   assert.ok(bounded.contents.some((item) => item.truncated));
   assert.ok(JSON.stringify(bounded).length < 5500);
+});
+
+test('includes extensionless and nested READMEs and prioritizes the root README within the input budget', async (t) => {
+  const {directory} = await fixture(t);
+  await rm(path.join(directory, 'README.md'));
+  await writeFile(path.join(directory, 'README'), 'Requires a Linux host. Run scripts/setup.sh.');
+  await writeFile(path.join(directory, 'scripts/README'), 'Setup script documentation.');
+  await writeFile(path.join(directory, 'aaa.txt'), 'Other context. '.repeat(1000));
+  const context = await collectScenarioContext(directory, 5000);
+  assert.equal(context.contents[0].path, 'scenario.cradle');
+  assert.deepEqual(context.contents[1], {path: 'README', text: 'Requires a Linux host. Run scripts/setup.sh.', truncated: false});
+  assert.ok((await collectScenarioContext(directory)).contents.some((item) => item.path === 'scripts/README' && item.text === 'Setup script documentation.'));
 });
 
 test('generates a validated draft and preserves source assets', async (t) => {
@@ -98,16 +112,48 @@ test('generates a validated draft and preserves source assets', async (t) => {
   assert.equal(request.url, 'https://example.test/v1/chat/completions');
   const prompt = JSON.parse(request.options.body);
   assert.match(prompt.messages[0].content, /untrusted reference data/);
+  assert.match(prompt.messages[0].content, /When a README is supplied, use its documented purpose/);
   const sent = JSON.parse(prompt.messages[1].content);
   assert.ok(sent.contents.some((file) => file.text === 'scenario Railway {}'));
+  assert.ok(sent.contents.some((file) => file.path === 'README.md' && file.text === 'Railway exercise.'));
   const article = await readFile(result.filename, 'utf8');
   const data = parseDocument(article.match(/^---\n([\s\S]*?)\n---/)[1]).toJS();
   assert.equal(data.draft, true);
   assert.equal(data.id, undefined);
+  assert.equal(data.thumbnail, './image.png');
+  assert.equal(data.thumbnailAlt, 'Railway artwork (image.png)');
+  assert.deepEqual(sent.images, ['image.png']);
+  assert.match(prompt.messages[0].content, /If images are available, select an existing path as thumbnail/);
   assert.match(article, /article generator did not run compiler/);
   assert.match(article, /\[Download the specification\]\(\.\/scenario\.cradle\)/);
   assert.equal(await readFile(path.join(directory, 'scenario.cradle'), 'utf8'), 'scenario Railway {}');
   assert.ok(!(await readdir(directory)).some((file) => file.endsWith('.tmp')));
+});
+
+test('automatically selects preferred SVG artwork and preserves an explicit model image choice', async (t) => {
+  const {root, directory} = await fixture(t);
+  await mkdir(path.join(directory, 'images'));
+  await writeFile(path.join(directory, 'preview.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+  await writeFile(path.join(directory, 'images/cover photo.jpg'), Buffer.from([1, 2, 3]));
+  const context = await collectScenarioContext(directory);
+  assert.deepEqual(context.images, ['preview.svg', 'images/cover photo.jpg', 'image.png']);
+  assert.ok(!context.contents.some(file => /\.(svg|jpg|png)$/.test(file.path)));
+  const run = text => generateScenarioArticle('railway', {sourceRoot: root, overwrite: true, env: {}, fetchImpl: async () => reply(text)});
+  const result = await run(validArticle);
+  let metadata = parseDocument((await readFile(result.filename, 'utf8')).match(/^---\n([\s\S]*?)\n---/)[1]).toJS();
+  assert.equal(metadata.thumbnail, './preview.svg');
+  assert.equal(metadata.thumbnailAlt, 'Railway artwork (preview.svg)');
+  await run(validArticle.replace('title: Railway', 'title: Railway\nthumbnail: ./images/cover%20photo.jpg\nthumbnailAlt: Supplied cover image'));
+  metadata = parseDocument((await readFile(result.filename, 'utf8')).match(/^---\n([\s\S]*?)\n---/)[1]).toJS();
+  assert.equal(metadata.thumbnail, './images/cover%20photo.jpg');
+  assert.equal(metadata.thumbnailAlt, 'Supplied cover image');
+  await rm(path.join(directory, 'preview.svg'));
+  await rm(path.join(directory, 'images'), {recursive: true});
+  await rm(path.join(directory, 'image.png'));
+  await run(validArticle.replace('title: Railway', 'title: Railway\nartwork: network'));
+  metadata = parseDocument((await readFile(result.filename, 'utf8')).match(/^---\n([\s\S]*?)\n---/)[1]).toJS();
+  assert.equal(metadata.thumbnail, undefined);
+  assert.equal(metadata.artwork, 'network');
 });
 
 test('accepts articles following model reasoning, introductory text and Markdown wrappers', async (t) => {
@@ -196,6 +242,7 @@ test('import can generate a draft, preserves authored articles, and retains copi
   const source = path.join(root, 'source');
   await mkdir(path.join(source, 'scripts'), {recursive: true});
   await writeFile(path.join(source, 'range.cradle'), 'scenario Railway {}');
+  await writeFile(path.join(source, 'README'), 'Imported railway setup and usage.');
   await writeFile(path.join(source, 'scripts/setup.sh'), 'echo setup');
   const keys = ['SERVER', 'REMOTE_LLM_MODEL', 'REMOTE_LLM_API_KEY'];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -207,6 +254,8 @@ test('import can generate a draft, preserves authored articles, and retains copi
   await createLibraryEntry('scenario', 'generated', {root, from: source, generateIndex: true});
   assert.match(await readFile(path.join(root, 'scenarios/generated/index.md'), 'utf8'), /title: Railway/);
   assert.equal(request.mock.callCount(), 1);
+  const sent = JSON.parse(JSON.parse(request.mock.calls[0].arguments[1].body).messages[1].content);
+  assert.ok(sent.contents.some((file) => file.path === 'README' && file.text === 'Imported railway setup and usage.'));
   await writeFile(path.join(source, 'index.md'), 'Authored article');
   await createLibraryEntry('scenario', 'authored', {root, from: source, generateIndex: true});
   assert.equal(request.mock.callCount(), 1);
@@ -214,6 +263,6 @@ test('import can generate a draft, preserves authored articles, and retains copi
   await rm(path.join(source, 'index.md'));
   request.mock.mockImplementation(async () => new Response('', {status: 503}));
   await assert.rejects(createLibraryEntry('scenario', 'failed', {root, from: source, generateIndex: true}), /Copied files and starter article are preserved/);
-  assert.equal(await readFile(path.join(root, 'scenarios/failed/scenario.cradle'), 'utf8'), 'scenario Railway {}');
+  assert.equal(await readFile(path.join(root, 'scenarios/failed/range.cradle'), 'utf8'), 'scenario Railway {}');
   assert.match(await readFile(path.join(root, 'scenarios/failed/index.md'), 'utf8'), /draft: true/);
 });

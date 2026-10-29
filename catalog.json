@@ -3,7 +3,7 @@
   "scenarios": [
     {
       "id": "hello-world",
-      "title": "Hello World",
+      "title": "Hello World scenario",
       "description": "A compact CRADLE scenario combining local and cradle-lib configurations, CVE heuristics, and an event object on one Ubuntu instance.",
       "tags": [
         "hello-world",

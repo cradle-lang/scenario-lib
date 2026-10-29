@@ -1,6 +1,7 @@
 name: Validate scenarios
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -24,6 +25,11 @@ jobs:
           repository: cradle-lang/cradle-lib
           path: .ci/cradle-lib
           persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: cradle-lang/cradle-lib-cve
+          path: .ci/cradle-lib-cve
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -40,7 +46,7 @@ jobs:
       - name: Validate CRADLE syntax, structure, configs and heuristics
         env:
           SCENARIO: ${{ inputs.scenario }}
-        run: npm run library:validate -- --library .ci/cradle-lib --scenario "$SCENARIO"
+        run: npm run library:validate -- --library .ci/cradle-lib --cve-library .ci/cradle-lib-cve --scenario "$SCENARIO"
       - name: Export the two-file website snapshot
         run: npm run library:export-website
       - uses: actions/upload-artifact@v4

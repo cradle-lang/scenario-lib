@@ -11,10 +11,12 @@ async function fixture(t) {
   t.after(() => rm(root, {recursive: true, force: true}));
   const entry = path.join(root, 'source/scenarios/example');
   const library = path.join(root, 'shared');
+  const cveLibrary = path.join(root, 'shared-cve');
+  await mkdir(cveLibrary);
   await mkdir(entry, {recursive: true});
   await mkdir(path.join(library, 'configs'), {recursive: true});
   await writeFile(path.join(entry, 'README.md'), '---\nid: example\ntitle: Example\ndescription: Example\nentrypoint: scenario.cradle\n---\n');
-  return {root, entry, library, source: path.join(root, 'source')};
+  return {root, entry, library, cveLibrary, source: path.join(root, 'source')};
 }
 async function module(base, name, extension = 'j2', content = '- name: Task\n') {
   const directory = path.join(base, name, 'ansible');
@@ -71,7 +73,7 @@ test('rejects broken local modules instead of silently falling back to cradle-li
 });
 
 test('runs cxc validate for drafts, reports missing configs, and continues after syntax failures', async (t) => {
-  const {root, entry, library, source} = await fixture(t);
+  const {root, entry, library, cveLibrary, source} = await fixture(t);
   await writeFile(path.join(entry, 'scenario.cradle'), 'instance("pc") > config("missing").');
   await writeFile(path.join(entry, 'index.md'), '---\ndraft: true\n---\n');
   const next = path.join(source, 'scenarios/second');
@@ -79,7 +81,7 @@ test('runs cxc validate for drafts, reports missing configs, and continues after
   await writeFile(path.join(next, 'README.md'), '---\nid: second\ntitle: Second\ndescription: Example\nentrypoint: scenario.cradle\n---\n');
   await writeFile(path.join(next, 'scenario.cradle'), 'instance("pc") > config("linux-routing").');
   const calls = [];
-  const result = await validateSources({sourceRoot: source, libraryRoot: library, output: path.join(root, 'output'), run: (command, args, options) => {
+  const result = await validateSources({sourceRoot: source, libraryRoot: library, cveLibraryRoot: cveLibrary, output: path.join(root, 'output'), run: (command, args, options) => {
     calls.push({command, args, options});
     if (args[0] === '--version') return {status: 0, stdout: 'cxc test-version'};
     return args[2].includes(`${path.sep}example${path.sep}`) ? {status: 1, stderr: 'Syntax error\n'} : {status: 0, stdout: 'Valid\n'};
@@ -98,9 +100,9 @@ test('runs cxc validate for drafts, reports missing configs, and continues after
 });
 
 test('selects one scenario, refuses an unknown ID, and reports an unavailable compiler', async (t) => {
-  const {root, entry, library, source} = await fixture(t);
+  const {root, entry, library, cveLibrary, source} = await fixture(t);
   await writeFile(path.join(entry, 'scenario.cradle'), 'metadata() > name("Example").');
-  const options = {sourceRoot: source, libraryRoot: library, output: path.join(root, 'output'), scenario: 'example'};
+  const options = {sourceRoot: source, libraryRoot: library, cveLibraryRoot: cveLibrary, output: path.join(root, 'output'), scenario: 'example'};
   const success = await validateSources({...options, run: () => ({status: 0, stdout: 'ok'})});
   assert.equal(success.failed, 0);
   await assert.rejects(validateSources({...options, scenario: '../escape'}), /folder ID/);

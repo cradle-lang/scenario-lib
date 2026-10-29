@@ -94,7 +94,7 @@ export async function readLibrary(sourceRoot = root) {
         if (!['auto', 'network', 'enterprise', 'monitoring'].includes(entry.artwork)) articleError('invalid artwork choice');
         if (data.thumbnail !== undefined) {
           const thumbnail = required('thumbnail');
-          if (!/\.(png|jpe?g|webp|gif)$/i.test(thumbnail)) articleError('thumbnail must be PNG, JPEG, WebP or GIF');
+          if (!/\.(png|jpe?g|webp|gif|svg|avif)$/i.test(thumbnail)) articleError('thumbnail must be PNG, JPEG, WebP, GIF, SVG or AVIF');
           entry.thumbnail = await asset(thumbnail);
           entry.thumbnailAlt = required('thumbnailAlt');
         }

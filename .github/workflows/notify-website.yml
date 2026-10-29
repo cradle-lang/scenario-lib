@@ -51,4 +51,4 @@ jobs:
               event_type: 'scenario-library-updated',
               client_payload: {source_repository: context.payload.repository.full_name, source_sha: run.head_sha, source_run_id: run.id}
             });
-            await core.summary.addHeading('Website review requested').addRaw(`Validated source: ${run.head_sha}\n\nThe website receiver will open/update a PR containing scenario.cradle and index.md only.`).write();
+            await core.summary.addHeading('Website review requested').addRaw(`Validated source: ${run.head_sha}\n\nThe website receiver will download the website-scenarios bundle from this validation run and open/update a PR containing scenario.cradle and index.md for every exported scenario, including drafts. validation-smoke-test is excluded from the bundle.`).write();

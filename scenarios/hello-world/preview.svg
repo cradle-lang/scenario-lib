@@ -1,23 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420">
-  <rect width="900" height="420" fill="#0b1020"/>
-  <text x="450" y="58" fill="#f8fafc" font-family="system-ui, sans-serif"
-        font-size="34" font-weight="700" text-anchor="middle">Hello World</text>
-  <text x="450" y="92" fill="#94a3b8" font-family="system-ui, sans-serif"
-        font-size="17" text-anchor="middle">One VM · One config · One event</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" fill="none">
+  <title>Hello World — your first CRADLE scenario</title>
+  <desc>A terminal greeting on one Ubuntu machine, connected to a small private network.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1200" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e8f2ff"/>
+      <stop offset="1" stop-color="#f6fbff"/>
+    </linearGradient>
+    <linearGradient id="terminal" x1="270" y1="130" x2="910" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172d4c"/>
+      <stop offset="1" stop-color="#0b192e"/>
+    </linearGradient>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#9cbde7" opacity=".35"/>
+    </pattern>
+    <filter id="shadow" x="170" y="60" width="860" height="520" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#305c98" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="600" fill="url(#background)"/>
+  <rect width="1200" height="600" fill="url(#dots)"/>
+  <circle cx="600" cy="300" r="248" fill="#dbeafe" opacity=".65"/>
 
-  <rect x="80" y="165" width="740" height="170" rx="24"
-        fill="none" stroke="#334155" stroke-width="2"/>
-  <text x="110" y="200" fill="#94a3b8" font-family="system-ui, sans-serif"
-        font-size="16">private network · 10.42.0.0/24</text>
+  <!-- A small world behind the terminal gives the greeting a visual counterpart. -->
+  <g stroke="#80aee8" stroke-width="2" opacity=".65">
+    <circle cx="960" cy="300" r="122"/>
+    <ellipse cx="960" cy="300" rx="52" ry="122"/>
+    <ellipse cx="960" cy="300" rx="122" ry="45"/>
+    <path d="M838 300h244M960 178v244"/>
+  </g>
+  <path d="M146 300h98M956 300h98" stroke="#83afe7" stroke-width="3" stroke-dasharray="6 9"/>
+  <circle cx="146" cy="300" r="8" fill="#fff" stroke="#79a8e6" stroke-width="3"/>
 
-  <rect x="275" y="230" width="350" height="80" rx="16" fill="#172554"
-        stroke="#3b82f6" stroke-width="2"/>
-  <text x="450" y="263" fill="#dbeafe" font-family="system-ui, sans-serif"
-        font-size="22" font-weight="650" text-anchor="middle">hello</text>
-  <text x="450" y="290" fill="#93c5fd" font-family="system-ui, sans-serif"
-        font-size="15" text-anchor="middle">Ubuntu 22.04 · 10.42.0.10</text>
+  <!-- Keep the greeting and machine details within the central card crop. -->
+  <g filter="url(#shadow)">
+    <rect x="250" y="120" width="700" height="360" rx="24" fill="url(#terminal)"/>
+    <path d="M274 120h652a24 24 0 0 1 24 24v38H250v-38a24 24 0 0 1 24-24Z" fill="#223a5b"/>
+    <path d="M250 182h700" stroke="#345071"/>
+    <circle cx="282" cy="151" r="6" fill="#f48f91"/>
+    <circle cx="304" cy="151" r="6" fill="#f5ce83"/>
+    <circle cx="326" cy="151" r="6" fill="#63d6af"/>
+    <text x="600" y="158" text-anchor="middle" fill="#c2d2e8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">hello@cradle: ~</text>
+    <text x="300" y="245" fill="#7ee0bb" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">$ ./hello.sh</text>
+    <text x="298" y="325" fill="#f4f8ff" font-family="system-ui, -apple-system, sans-serif" font-size="62" font-weight="650" letter-spacing="-2">Hello, world!</text>
+    <rect x="718" y="281" width="15" height="51" rx="2" fill="#7ee0bb"/>
+    <path d="M300 365h600" stroke="#2c4362"/>
+    <circle cx="311" cy="415" r="6" fill="#63d6af"/>
+    <text x="330" y="422" fill="#b2c7e1" font-family="system-ui, -apple-system, sans-serif" font-size="19">One Ubuntu machine. One simple event.</text>
+  </g>
 
-  <circle cx="450" cy="372" r="5" fill="#22c55e"/>
-  <text x="470" y="378" fill="#86efac" font-family="system-ui, sans-serif"
-        font-size="15">provision marker + event output</text>
+  <g transform="translate(896 141)">
+    <circle r="29" fill="#e0faf0" stroke="#fff" stroke-width="5"/>
+    <path d="m-12 0 8 8 16-17" stroke="#209879" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
