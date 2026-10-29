@@ -16,7 +16,7 @@ async function fixture(t) {
   return {directory, source, destinationRoot};
 }
 
-test('imports nested assets byte-for-byte, normalizes the specification, and creates a draft', async (t) => {
+test('imports nested assets byte-for-byte, preserves the specification filename, and creates a draft', async (t) => {
   const {source, destinationRoot} = await fixture(t);
   await writeFile(path.join(source, 'my-range.cradle'), 'scenario Example {}\n');
   await mkdir(path.join(source, 'configs', 'ansible'), {recursive: true});
@@ -29,13 +29,14 @@ test('imports nested assets byte-for-byte, normalizes the specification, and cre
   for (const excluded of ['.git', 'node_modules']) await mkdir(path.join(source, excluded));
   const relative = await createLibraryEntry('scenario', 'my-range', {root: destinationRoot, from: source});
   const destination = path.join(destinationRoot, relative);
-  assert.equal(await readFile(path.join(destination, 'scenario.cradle'), 'utf8'), 'scenario Example {}\n');
+  assert.equal(await readFile(path.join(destination, 'my-range.cradle'), 'utf8'), 'scenario Example {}\n');
   assert.equal(await readFile(path.join(source, 'my-range.cradle'), 'utf8'), 'scenario Example {}\n');
   assert.equal(await readFile(path.join(destination, 'configs/ansible/setup.j2'), 'utf8'), '{{ config }}\n');
   assert.deepEqual(await readFile(path.join(destination, 'artifacts/data.bin')), binary);
   assert.match(await readFile(path.join(destination, 'index.md'), 'utf8'), /title: "My Range"[\s\S]*draft: true/);
-  assert.deepEqual((await readdir(destination)).sort(), ['artifacts', 'configs', 'index.md', 'scenario.cradle']);
+  assert.deepEqual((await readdir(destination)).sort(), ['artifacts', 'configs', 'index.md', 'my-range.cradle']);
   assert.deepEqual(await readdir(path.join(destination, 'configs')), ['ansible']);
+  assert.match(await readFile(path.join(destination, 'index.md'), 'utf8'), /\.\/my-range\.cradle/);
   await assert.rejects(createLibraryEntry('scenario', 'my-range', {root: destinationRoot, from: source}), /already exists/);
   assert.deepEqual(await readFile(path.join(destination, 'artifacts/data.bin')), binary);
 });
@@ -53,6 +54,25 @@ test('preserves authored articles and canonical specifications with additional s
   assert.ok(!(await readdir(destination)).includes('index.md'));
 });
 
+test('preserves named specifications, README entrypoints and authored links on import', async (t) => {
+  const {source, destinationRoot} = await fixture(t);
+  const spec = 'metadata() > name("Railway").\n';
+  const readme = '---\ntitle: Railway\ndescription: Example\nentrypoint: Railway.cradle\n---\n[Source](./Railway.cradle)\n';
+  const article = '---\ntitle: Railway\ndescription: Example\n---\n[Railway.cradle](./Railway.cradle)\n';
+  for (const [name, contents] of [['Railway.cradle', spec], ['README.md', readme], ['index.md', article]]) {
+    await writeFile(path.join(source, name), contents);
+  }
+  await createLibraryEntry('scenario', 'railway', {root: destinationRoot, from: source});
+  const destination = path.join(destinationRoot, 'scenarios/railway');
+  for (const [name, contents] of [['Railway.cradle', spec], ['README.md', readme], ['index.md', article]]) {
+    assert.equal(await readFile(path.join(destination, name), 'utf8'), contents);
+    assert.equal(await readFile(path.join(source, name), 'utf8'), contents);
+  }
+  assert.ok(!(await readdir(destination)).includes('scenario.cradle'));
+  const {readScenario} = await import('./scenario-layout.mjs');
+  assert.equal((await readScenario(destination)).entrypointName, 'Railway.cradle');
+});
+
 test('imports selected scenario contents, omits TOML and unrelated files, and preserves an optional article', async (t) => {
   const {source, destinationRoot} = await fixture(t);
   await writeFile(path.join(source, 'Railway.cradle'), 'scenario Railway {}');
@@ -66,7 +86,7 @@ test('imports selected scenario contents, omits TOML and unrelated files, and pr
   }
   await createLibraryEntry('scenario', 'railway', {root: destinationRoot, from: source});
   const destination = path.join(destinationRoot, 'scenarios/railway');
-  assert.deepEqual((await readdir(destination)).sort(), ['README.md', 'artifact', 'config', 'heuristics', 'images', 'index.md', 'scenario.cradle', 'scripts', 'setup.sh', 'topology.png'].sort());
+  assert.deepEqual((await readdir(destination)).sort(), ['README.md', 'artifact', 'config', 'heuristics', 'images', 'index.md', 'Railway.cradle', 'scripts', 'setup.sh', 'topology.png'].sort());
   for (const folder of ['config', 'artifact', 'scripts', 'images', 'heuristics']) {
     assert.deepEqual(await readdir(path.join(destination, folder)), ['content.bin']);
     assert.deepEqual(await readFile(path.join(destination, folder, 'content.bin')), Buffer.from([0, 128, 255]));
@@ -133,6 +153,6 @@ test('CLI imports a relative source directory containing spaces', async (t) => {
   await cp(path.join(root, 'library/_templates'), path.join(directory, 'library/_templates'), {recursive: true});
   const result = spawnSync(process.execPath, [path.join(directory, 'scripts/new-library-entry.mjs'), 'scenario', 'cli-range', '--from', './source with spaces', '--mdx'], {cwd: directory, encoding: 'utf8'});
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(await readFile(path.join(directory, 'scenarios/cli-range/scenario.cradle'), 'utf8'), 'main');
+  assert.equal(await readFile(path.join(directory, 'scenarios/cli-range/my-range.cradle'), 'utf8'), 'main');
   assert.match(result.stdout, /Created scenarios\/cli-range/);
 });

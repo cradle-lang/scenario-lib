@@ -37,6 +37,12 @@ jobs:
           repository: cradle-lang/cradle-lib
           path: cradle-lib
           persist-credentials: false
+      - name: Checkout current shared CVE heuristic library
+        uses: actions/checkout@v4
+        with:
+          repository: cradle-lang/cradle-lib-cve
+          path: cradle-lib-cve
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -58,6 +64,7 @@ jobs:
           node tooling/scripts/validate-sources.mjs \
             --source "$GITHUB_WORKSPACE/content" \
             --library "$GITHUB_WORKSPACE/cradle-lib" \
+            --cve-library "$GITHUB_WORKSPACE/cradle-lib-cve" \
             --scenario "$SCENARIO" \
             --output "$GITHUB_WORKSPACE/scenario-output"
       - name: Export the two-file website snapshot

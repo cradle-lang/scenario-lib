@@ -1,4 +1,4 @@
-import {appendFile, lstat, mkdir, readdir, writeFile} from 'node:fs/promises';
+import {appendFile, lstat, mkdir, readdir, rm, symlink, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
@@ -14,7 +14,7 @@ const gitRevision = (directory) => {
   return result.status === 0 ? result.stdout.trim() : 'uncommitted/local content';
 };
 
-async function compilerContext(entryRoot, libraryRoot, output, id) {
+async function compilerContext(entryRoot, libraryRoot, cveLibraryRoot, output, id) {
   const layers = async (folders, shared) => {
     const result = [];
     for (const folder of folders) {
@@ -24,13 +24,27 @@ async function compilerContext(entryRoot, libraryRoot, output, id) {
       if (!info.isDirectory()) throw new Error(`${directory}: expected a regular content directory`);
       result.push(directory);
     }
-    result.push(path.join(libraryRoot, shared));
+    result.push(shared);
     return result;
   };
-  const configs = await layers(['configs', 'config', 'configurations', 'configuration'], 'configs');
-  const heuristics = await layers(['heuristics', 'heuristic'], 'heuristics');
   const directory = path.join(output, id, 'compiler-context');
   await mkdir(directory, {recursive: true});
+  // CXC expects <root>/<framework>/<value>, but cradle-lib-cve has modules
+  // directly at its root. Build a framework view without copying module content.
+  const sharedHeuristics = path.join(directory, 'shared-heuristics');
+  await rm(sharedHeuristics, {recursive: true, force: true});
+  await mkdir(sharedHeuristics);
+  await symlink(cveLibraryRoot, path.join(sharedHeuristics, 'cve'), 'dir');
+  const libraryHeuristics = path.join(libraryRoot, 'heuristics');
+  if ((await exists(libraryHeuristics))?.isDirectory()) {
+    for (const framework of await readdir(libraryHeuristics, {withFileTypes: true})) {
+      if (framework.name !== 'cve' && framework.isDirectory()) {
+        await symlink(path.join(libraryHeuristics, framework.name), path.join(sharedHeuristics, framework.name), 'dir');
+      }
+    }
+  }
+  const configs = await layers(['configs', 'config', 'configurations', 'configuration'], path.join(libraryRoot, 'configs'));
+  const heuristics = await layers(['heuristics', 'heuristic'], sharedHeuristics);
   // cxc loads config.toml from its working directory. Input remains an absolute
   // source path so include statements resolve beside their authoring file.
   await writeFile(path.join(directory, 'config.toml'), [
@@ -42,14 +56,16 @@ async function compilerContext(entryRoot, libraryRoot, output, id) {
   return directory;
 }
 
-export async function validateSources({sourceRoot = root, libraryRoot, scenario = '', output = path.join(root, 'scenario-output'), run = spawnSync} = {}) {
+export async function validateSources({sourceRoot = root, libraryRoot, cveLibraryRoot, scenario = '', output = path.join(root, 'scenario-output'), run = spawnSync} = {}) {
   if (!libraryRoot) throw new Error('Provide --library <cradle-lib checkout>.');
+  if (!cveLibraryRoot) throw new Error('Provide --cve-library <cradle-lib-cve checkout>.');
   sourceRoot = path.resolve(sourceRoot);
   libraryRoot = path.resolve(libraryRoot);
+  cveLibraryRoot = path.resolve(cveLibraryRoot);
   output = path.resolve(output);
   if (scenario && !slug.test(scenario)) throw new Error('Scenario must be a lowercase folder ID.');
   const directory = path.join(sourceRoot, 'scenarios');
-  for (const parent of [directory, libraryRoot]) {
+  for (const parent of [directory, libraryRoot, cveLibraryRoot]) {
     if (!(await lstat(parent)).isDirectory()) throw new Error(`${parent}: expected a regular directory`);
   }
   const folders = (await readdir(directory, {withFileTypes: true})).filter((entry) => entry.name !== '.gitkeep');
@@ -59,7 +75,7 @@ export async function validateSources({sourceRoot = root, libraryRoot, scenario 
   await mkdir(output, {recursive: true});
   const version = run('cxc', ['--version'], {encoding: 'utf8', timeout: 30000});
   if (version.error || version.status !== 0) throw new Error('cxc is unavailable; install CradleXC before running source validation.');
-  const report = {compiler: version.stdout.trim(), sourceRevision: gitRevision(sourceRoot), libraryRevision: gitRevision(libraryRoot), scenarios: []};
+  const report = {compiler: version.stdout.trim(), sourceRevision: gitRevision(sourceRoot), libraryRevision: gitRevision(libraryRoot), cveLibraryRevision: gitRevision(cveLibraryRoot), scenarios: []};
   for (const id of ids) {
     const entryRoot = path.join(directory, id);
     const item = {id, validation: 'not run', configs: [], heuristics: [], errors: []};
@@ -69,7 +85,7 @@ export async function validateSources({sourceRoot = root, libraryRoot, scenario 
       // Preflight includes before cxc reads them; then cxc validates the source itself.
       const scenario = await readScenario(entryRoot);
       const references = await collectContentReferences(entryRoot, {entrypoint: scenario.entrypoint});
-      const workingDirectory = await compilerContext(entryRoot, libraryRoot, output, id);
+      const workingDirectory = await compilerContext(entryRoot, libraryRoot, cveLibraryRoot, output, id);
       const result = run('cxc', ['validate', '-i', scenario.entrypoint], {
         cwd: workingDirectory, encoding: 'utf8', timeout: 120000, maxBuffer: 4 * 1024 * 1024,
       });
@@ -78,7 +94,7 @@ export async function validateSources({sourceRoot = root, libraryRoot, scenario 
       item.validation = !result.error && result.status === 0 ? 'passed' : 'failed';
       if (item.validation === 'failed') item.errors.push(result.error ? `cxc validate failed: ${result.error.code || result.error.message}` : `cxc validate exited with code ${result.status}`);
       try {
-        item.heuristics = await resolveHeuristicReferences(entryRoot, libraryRoot, references.heuristics);
+        item.heuristics = await resolveHeuristicReferences(entryRoot, libraryRoot, references.heuristics, cveLibraryRoot);
         for (const heuristic of item.heuristics) {
           if (heuristic.error) item.errors.push(heuristic.error);
           console.log(`  heuristic ${heuristic.framework}/${heuristic.value}: ${heuristic.error || heuristic.source}`);
@@ -99,6 +115,7 @@ export async function validateSources({sourceRoot = root, libraryRoot, scenario 
     `Compiler: ${escape(report.compiler)}`,
     `Source revision: ${escape(report.sourceRevision)}`,
     `cradle-lib revision: ${escape(report.libraryRevision)}`,
+    `cradle-lib-cve revision: ${escape(report.cveLibraryRevision)}`,
     `${ids.length} scenario(s) checked; ${failed} failed. Draft scenarios are included.`,
     ...report.scenarios.flatMap((item) => [
       `### ${escape(item.id)}`,
@@ -120,10 +137,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     const args = process.argv.slice(2);
     const options = {};
-    const flags = {'--source': 'sourceRoot', '--library': 'libraryRoot', '--scenario': 'scenario', '--output': 'output'};
+    const flags = {'--source': 'sourceRoot', '--library': 'libraryRoot', '--cve-library': 'cveLibraryRoot', '--scenario': 'scenario', '--output': 'output'};
     for (let i = 0; i < args.length; i += 2) {
       const key = flags[args[i]];
-      if (!key || options[key] !== undefined || args[i + 1] === undefined) throw new Error('Usage: npm run library:validate -- --library <checkout> [--scenario <id>] [--source <checkout>] [--output <directory>]');
+      if (!key || options[key] !== undefined || args[i + 1] === undefined) throw new Error('Usage: npm run library:validate -- --library <cradle-lib checkout> --cve-library <cradle-lib-cve checkout> [--scenario <id>] [--source <checkout>] [--output <directory>]');
       options[key] = args[i + 1];
     }
     const result = await validateSources(options);

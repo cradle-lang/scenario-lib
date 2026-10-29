@@ -1,10 +1,10 @@
-import {lstat, readFile} from 'node:fs/promises';
+import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {exists, templateUnder} from './config-references.mjs';
 
 const safeSegment = (value) => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(value) && value !== '.' && value !== '..';
 
-export async function resolveHeuristicReferences(entryRoot, libraryRoot, references) {
+export async function resolveHeuristicReferences(entryRoot, libraryRoot, references, cveLibraryRoot) {
   if (!references.length) return [];
   const directories = [];
   for (const folder of ['heuristics', 'heuristic']) {
@@ -14,9 +14,6 @@ export async function resolveHeuristicReferences(entryRoot, libraryRoot, referen
     if (!info.isDirectory()) throw new Error(`${base}: expected a regular heuristics directory`);
     directories.push({base, source: `scenario/${folder}`});
   }
-  const shared = path.join(libraryRoot, 'heuristics');
-  if (!(await lstat(shared)).isDirectory()) throw new Error('cradle-lib must contain a regular heuristics directory');
-  directories.push({base: shared, source: 'cradle-lib/heuristics'});
   const unique = new Map();
   for (const reference of references) {
     if (!safeSegment(reference.framework) || !safeSegment(reference.value)) throw new Error('Unsafe heuristic framework/value');
@@ -28,8 +25,12 @@ export async function resolveHeuristicReferences(entryRoot, libraryRoot, referen
     const item = {framework, value, source: null, template: null, manifest: null, configs: [], error: null};
     result.push(item);
     try {
-      for (const {base, source} of directories) {
-        const frameworkPath = path.join(base, framework);
+      const shared = framework === 'cve' ? cveLibraryRoot : path.join(libraryRoot, 'heuristics');
+      if (!shared) throw new Error('Provide --cve-library <cradle-lib-cve checkout>.');
+      for (const {base, source, frameworkPath = path.join(base, framework)} of [
+        ...directories,
+        {base: shared, frameworkPath: framework === 'cve' ? shared : path.join(shared, framework), source: framework === 'cve' ? 'cradle-lib-cve' : 'cradle-lib/heuristics'},
+      ]) {
         const info = await exists(frameworkPath);
         if (!info) continue;
         if (!info.isDirectory()) throw new Error(`${frameworkPath}: expected a regular framework directory`);

@@ -94,9 +94,11 @@ files/folders are not imported. For example, add an `objects/` folder manually
 if your scenario uses it. Symbolic links in selected content are rejected.
 
 The source must contain `scenario.cradle` or exactly one top-level `.cradle`
-file. A uniquely named file such as `Railway.cradle` is renamed to
-`scenario.cradle` in the copy. If there are multiple specifications, name the main
-one `scenario.cradle` first. Review links to a renamed specification.
+file. The imported filename is preserved: `Railway.cradle` stays `Railway.cradle`.
+If there are multiple specifications, the importer uses `scenario.cradle` as the
+main specification. Authored README entrypoints and article links are preserved.
+Only the website export uses the fixed filename `scenario.cradle` and adapts
+article links for the website copy. The original source folder is left unchanged.
 
 An existing article is preserved. Otherwise a draft `index.md` template is
 created. Add `--mdx` to use MDX locally; convert it to `index.md` before website
@@ -141,8 +143,13 @@ Retain the specification link and link relevant supporting files:
 ```
 
 Optional artwork choices are `auto`, `network`, `enterprise` or `monitoring`.
-A custom `thumbnail` must be a PNG/JPEG/WebP/GIF inside the scenario and needs
-`thumbnailAlt`. Website export uses built-in artwork rather than copying images.
+A custom `thumbnail` must be a PNG/JPEG/WebP/GIF/SVG/AVIF inside the scenario and
+needs `thumbnailAlt`. The LLM generator receives an explicit list of local
+images and can select one as the thumbnail. If it omits a thumbnail, the generator
+automatically picks a local image, preferring preview/thumbnail/cover/topology/diagram
+filenames, then shallower paths and alphabetical order. A neutral alt label is
+used because image contents are not inspected. Without images, built-in artwork
+remains available. Website export uses built-in artwork rather than copying images.
 
 Keep `draft: true` while preparing the article; change it to `draft: false` when
 ready for website publication. Drafts remain in the root catalogue and undergo
@@ -197,7 +204,7 @@ tests. It does not itself run CXC or a simulation.
 | `catalog.json` | Tracked catalogue of all scenarios, including drafts and their entrypoints. Commit updates with your scenario. |
 | `dist/catalog.json` | Generated catalogue of published articles, created by `library:catalog` and ignored by Git. |
 | `scenario-output/` | Ignored compiler/reference reports and temporary output. |
-| `website-export/bundle.json` | Ignored snapshot containing only scenario IDs, CRADLE text and website article text. |
+| `website-export/bundle.json` | Ignored snapshot containing scenario file contents and a searchable metadata catalogue. |
 
 Article checks cover folder structure, YAML, required metadata, duplicate resource
 keys, published source presence, comment-only scenario stubs, download links,
@@ -217,16 +224,17 @@ python scripts/validate.py --update --skip-cxc
 Without `--skip-cxc`, it also runs `cxc validate` if CXC is installed. For complete
 config/heuristic resolution against a shared library checkout, use the next command.
 
-### 5. Validate with CXC and cradle-lib
+### 5. Validate with CXC and the shared libraries
 
-With `cxc` on your PATH, clone the shared library or use an existing checkout:
+With `cxc` on your PATH, clone the shared libraries or use existing checkouts:
 
 ```powershell
 git clone https://github.com/cradle-lang/cradle-lib.git .reference-cradle-lib
-npm run library:validate -- --library .reference-cradle-lib --scenario railway-demo
+git clone https://github.com/cradle-lang/cradle-lib-cve.git .reference-cradle-lib-cve
+npm run library:validate -- --library .reference-cradle-lib --cve-library .reference-cradle-lib-cve --scenario railway-demo
 ```
 
-Skip the clone if that folder already exists. Omit `--scenario railway-demo`
+Skip each clone if that folder already exists. Omit `--scenario railway-demo`
 to check every scenario, including drafts. This command requires CXC and fails
 if the compiler is unavailable. See the
 [CradleXC installation guide](https://cradle-lang.org/docs/getting-started/install-cradlexc).
@@ -241,7 +249,10 @@ non-empty `ansible/<name>.j2`, `.yml` or `.yaml` template. Legacy aliases and
 compiler-provided `linux-routing`/`win-routing` configs are recognized.
 
 Heuristic lookup checks local `heuristics/` then `heuristic/`, followed by
-`cradle-lib/heuristics/`. Each referenced module needs a template and matching
+the shared library for its framework: CVE modules come from the root of
+`cradle-lib-cve/`; TTP modules come from `cradle-lib/heuristics/ttp/`.
+CVE lookup does not fall back to `cradle-lib/heuristics/cve/`.
+Each referenced module needs a template and matching
 `manifest.json`. The manifest's `framework`/`value` must match the path;
 `os` and `os_version` must both be strings or both null/omitted. Any configs
 listed by the manifest are checked through the same config lookup.
@@ -250,7 +261,7 @@ A malformed local module fails rather than silently falling back to a shared
 one. Missing references, invalid manifests, and compiler errors fail validation.
 Other scenarios are still checked. Results are written to
 `scenario-output/validation.json` and `scenario-output/validation.md`, recording
-the compiler version and source/library commits.
+the compiler version and source commits plus both shared library commits.
 
 These checks do not render or execute Ansible templates, run entry scripts,
 verify runtime images, provision infrastructure or execute events.
@@ -313,6 +324,12 @@ Or generate an article for the scenario imported in step 2:
 ```powershell
 npm run library:describe -- railway-demo --force
 ```
+
+When present, the imported README (including an extensionless `README`) is sent
+to the LLM and prioritized after the CRADLE specification. The prompt asks the
+model to use its purpose, setup, dependencies, usage, limitations and attribution
+when writing `index.md`, and to flag conflicts with source files. README content
+is subject to the same input limits as other files.
 
 Imported authored articles are preserved during import. `--force` explicitly
 allows the describe command to replace an existing article. Without it, existing
@@ -385,7 +402,11 @@ The intended flow is:
 
 1. Merge a scenario PR into this repository's `main`.
 2. **Validate scenarios** checks every scenario, including drafts.
-3. Only after success, the notifier triggers the website with the validated SHA
+3. The validation run bundles every scenario in `scenarios/`, including drafts,
+   except `validation-smoke-test`. Each entry contains its website `index.md`
+   article and CRADLE source, exported as `scenario.cradle`. The excluded smoke
+   test still runs through validation.
+   Only after success, the notifier triggers the website with the validated SHA
    and run ID. Failed validation, stale revisions and PR-only runs do not hand off.
 4. The website verifies/downloads the snapshot, checks its build and opens or
    updates a review PR. It does not merge or publish automatically.
@@ -404,6 +425,41 @@ cradle-lang.github.io/library/scenarios/railway/
 ```
 
 Each synced website folder contains exactly `scenario.cradle` and `index.md`.
+`validation-smoke-test` is never included in the website bundle.
+The JSON bundle keeps two arrays sorted by stable folder ID:
+
+- `scenarios`: `{id, spec, article}`, the contents of the two website files.
+- `catalog`: `{id, sourceUrl, title, description, source, category, requirements, tags, draft, searchText}`,
+  for search results and filters without parsing Markdown or CRADLE.
+
+Both arrays contain the same IDs, with one entry per scenario. The `catalog`
+entry's `sourceUrl` links directly to the original scenario folder on GitHub,
+for example `https://github.com/cradle-lang/scenario-lib/tree/<commit>/scenarios/railway`.
+Use it for the website's GitHub/source link. The exported article front matter
+contains the same URL, replacing stale authored source URLs. The commit in the
+link matches the validated snapshot and provides access to supporting files.
+The `catalog`
+field is an additive extension to bundle schema version 1; the existing
+`scenarios` records retain their original shape. Missing tags become `[]` and
+missing draft flags become `false`. Display metadata preserves its case;
+`searchText` combines the metadata, visible article text and CRADLE source,
+normalized with Unicode NFKC, lowercase and collapsed whitespace. Link URLs
+and the generated repository footer are not indexed.
+
+The website receiver can save `catalog` as its search index and join matching
+entries to `scenarios` by `id` when it needs the full files. For example:
+
+```js
+const terms = query.normalize('NFKC').toLowerCase().trim().split(/\s+/).filter(Boolean);
+const results = bundle.catalog.filter(entry =>
+  !entry.draft &&
+  (!category || entry.category === category) &&
+  (!tag || entry.tags.includes(tag)) &&
+  terms.every(term => entry.searchText.includes(term))
+);
+const filesById = new Map(bundle.scenarios.map(entry => [entry.id, entry]));
+```
+
 The CRADLE contents and folder ID are preserved, including when a native named
 entrypoint is exported. Native README articles are converted to the website
 format. Supporting-file links point to the source commit, image embeds become

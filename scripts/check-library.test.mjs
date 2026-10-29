@@ -62,6 +62,14 @@ test('rejects duplicate resource identity even with different folder IDs', async
   await entry(root, 'heuristics', 'second', 'framework: cwe\nidentifier: cwe-89');
   await assert.rejects(readLibrary(root), /duplicate/);
 });
+test('accepts SVG and AVIF local artwork thumbnails', async (t) => {
+  const root = await fixture(t);
+  for (const extension of ['svg', 'avif']) {
+    const directory = await scenario(root, 'example', `thumbnail: ./preview.${extension}\nthumbnailAlt: Supplied artwork`);
+    await writeFile(path.join(directory, `preview.${extension}`), extension === 'svg' ? '<svg xmlns="http://www.w3.org/2000/svg"/>' : Buffer.from([1, 2, 3]));
+    assert.equal((await readLibrary(root)).scenarios[0].thumbnailAlt, 'Supplied artwork');
+  }
+});
 test('reports invalid YAML, nonboolean drafts, duplicate articles and missing metadata', async (t) => {
   const root = await fixture(t);
   const directory = await entry(root, 'configurations', 'example', 'draft: "false"');

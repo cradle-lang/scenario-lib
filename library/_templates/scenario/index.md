@@ -7,7 +7,7 @@ tags: [Networking]
 requirements: List the supported testbed, images, configuration library and artifact dependencies.
 # Built-in choices: auto, network, enterprise, monitoring.
 artwork: auto
-# Optional PNG/JPEG/WebP/GIF (1200 x 675 recommended; centre important content).
+# Optional PNG/JPEG/WebP/GIF/SVG/AVIF (1200 x 675 recommended).
 # Uncomment both fields after adding the file:
 # thumbnail: ./thumbnail.webp
 # thumbnailAlt: Describe the image for someone who cannot see it.
@@ -23,7 +23,7 @@ configuration assets and other supporting files alongside this article.
 
 Choose the optional artwork fields above, or add your own thumbnail and its
 alternative text. Keep thumbnails inside this folder and document image
-attribution below. Supported formats are PNG, JPEG, WebP and GIF.
+attribution below. Supported formats are PNG, JPEG, WebP, GIF, SVG and AVIF.
 
 ## Topology and exercise
 

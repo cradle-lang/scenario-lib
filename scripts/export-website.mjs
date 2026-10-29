@@ -3,12 +3,38 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseDocument, stringify} from 'yaml';
 import {fromMarkdown} from 'mdast-util-from-markdown';
-import {readScenario, websiteArticle} from './scenario-layout.mjs';
+import {frontMatter, readScenario, websiteArticle} from './scenario-layout.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const repository = 'cradle-lang/scenario-lib';
 const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const excludedScenarios = new Set(['validation-smoke-test']);
 const inside = (parent, child) => {const relative = path.relative(parent, child); return !path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`);};
+
+function catalogEntry(id, article, spec, revision) {
+  const {metadata, body} = frontMatter(article, `${id}/index.md`);
+  const entry = {id, sourceUrl: `https://github.com/${repository}/tree/${revision}/scenarios/${encodeURIComponent(id)}`};
+  for (const key of ['title', 'description', 'source', 'category', 'requirements']) {
+    if (typeof metadata[key] !== 'string' || !metadata[key].trim()) throw new Error(`${id}: catalog ${key} must be a non-empty string`);
+    entry[key] = metadata[key].trim();
+  }
+  const tags = metadata.tags ?? [];
+  if (!Array.isArray(tags) || !tags.every(tag => typeof tag === 'string' && tag.trim())) throw new Error(`${id}: catalog tags must be an array of non-empty strings`);
+  entry.tags = [...new Set(tags.map(tag => tag.trim()))];
+  entry.draft = metadata.draft ?? false;
+  // Index visible article text and CRADLE source, without indexing link URLs or
+  // generated source-repository footer text. Preserve display fields separately.
+  const text = [];
+  function collect(node) {
+    if (['text', 'inlineCode', 'code'].includes(node.type)) text.push(node.value);
+    if (['image', 'imageReference'].includes(node.type)) text.push(node.alt || '');
+    for (const child of node.children || []) collect(child);
+  }
+  collect(fromMarkdown(body));
+  entry.searchText = [id, entry.title, entry.description, entry.source, entry.category, entry.requirements, ...entry.tags, ...text, spec]
+    .join(' ').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
+  return entry;
+}
 
 export async function exportArticle(article, {sourceRoot, entryRoot, revision, entrypoint = path.join(entryRoot, 'scenario.cradle')}) {
   const match = article.replace(/^\uFEFF/, '').match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -24,7 +50,7 @@ export async function exportArticle(article, {sourceRoot, entryRoot, revision, e
   delete data.thumbnail;
   delete data.thumbnailAlt;
   const sourceUrl = `https://github.com/${repository}/tree/${revision}/${path.relative(sourceRoot, entryRoot).split(path.sep).map(encodeURIComponent).join('/')}`;
-  if (!data.sourceUrl) data.sourceUrl = sourceUrl;
+  data.sourceUrl = sourceUrl;
   const body = article.replace(/^\uFEFF/, '').slice(match[0].length);
   const tree = fromMarkdown(body);
   const replacements = [];
@@ -84,20 +110,22 @@ export async function exportArticle(article, {sourceRoot, entryRoot, revision, e
 
 export async function exportWebsite({sourceRoot = root, revision} = {}) {
   if (!/^[a-f0-9]{40}$/i.test(revision || '')) throw new Error('Website export requires the full source commit SHA');
-  sourceRoot = path.resolve(sourceRoot);
+  sourceRoot = await realpath(path.resolve(sourceRoot));
   const directory = path.join(sourceRoot, 'scenarios');
   for (const parent of [directory]) if (!(await lstat(parent)).isDirectory()) throw new Error('Scenario parent must be a regular directory');
-  const bundle = {schemaVersion: 1, sourceRepository: repository, sourceRevision: revision, scenarios: []};
+  const bundle = {schemaVersion: 1, sourceRepository: repository, sourceRevision: revision, scenarios: [], catalog: []};
   for (const entry of (await readdir(directory, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name === '.gitkeep') continue;
+    if (entry.name === '.gitkeep' || excludedScenarios.has(entry.name)) continue;
     if (!entry.isDirectory() || !slug.test(entry.name)) throw new Error(`Invalid scenario folder: ${entry.name}`);
     const entryRoot = path.join(directory, entry.name);
     if ((await readdir(entryRoot)).includes('index.mdx')) throw new Error(`${entry.name}: website sync needs index.md (use index.md rather than MDX)`);
     const scenario = await readScenario(entryRoot);
     const spec = await readFile(scenario.entrypoint, 'utf8');
     if (!spec.trim()) throw new Error(`${entry.name}: empty CRADLE source`);
-    const article = await exportArticle(websiteArticle(scenario), {sourceRoot, entryRoot, revision, entrypoint: scenario.entrypoint});
+    const websiteMarkdown = websiteArticle(scenario);
+    const article = await exportArticle(websiteMarkdown, {sourceRoot, entryRoot, revision, entrypoint: scenario.entrypoint});
     bundle.scenarios.push({id: entry.name, spec, article});
+    bundle.catalog.push(catalogEntry(entry.name, websiteMarkdown, spec, revision));
   }
   return bundle;
 }

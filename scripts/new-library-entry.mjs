@@ -107,9 +107,6 @@ export async function createLibraryEntry(kind, slug, {root = siteRoot, mdx = fal
           filter: (filename) => shouldImport(filename, source, kind),
         });
       }
-      if (specification && specification !== 'scenario.cradle') {
-        await rename(path.join(destination, specification), path.join(destination, 'scenario.cradle'));
-      }
     }
     if (!importedArticle) {
       const template = path.join(siteRoot, 'library/_templates', kind);
@@ -121,6 +118,7 @@ export async function createLibraryEntry(kind, slug, {root = siteRoot, mdx = fal
       let markdown = await readFile(article, 'utf8');
       const title = slug.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
       markdown = markdown.replace(/^title: .+$/m, `title: ${JSON.stringify(title)}`);
+      if (kind === 'scenario' && specification) markdown = markdown.replaceAll('scenario.cradle', specification);
       if (kind === 'configuration') markdown = markdown.replace(/^config: .+$/m, `config: ${slug}`);
       await writeFile(article, markdown);
     }

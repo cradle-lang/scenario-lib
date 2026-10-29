@@ -1,4 +1,5 @@
 cradle.toml
+.DS_Store
 build/
 out/
 *.log
@@ -11,6 +12,7 @@ scenario-output/
 .library-import-test-*/
 .reference-cti-demo/
 .reference-cradle-lib/
+.reference-cradle-lib-cve/
 .website-sync/
 website-export/
 .env
