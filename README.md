@@ -280,6 +280,10 @@ Open a PR into `cradle-lang/scenario-lib`'s `main`. Include checks actually run
 and state compiler/runtime checks not run. Resolve failing CI before merge.
 Do not commit `.env`, `node_modules`, generated reports or the export bundle.
 
+The [scenario PR template](.github/pull_request_template.md) fills in the PR
+description automatically. Replace its placeholders with your scenario details,
+record validation results and complete the submission checklist.
+
 ## Optional: generate index.md with an LLM
 
 Skip this section if you prefer manual authoring. The generator follows the
