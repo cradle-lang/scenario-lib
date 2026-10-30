@@ -20,12 +20,13 @@ async function fixture(t) {
   return {root, entry};
 }
 
-test('exports a named two-file snapshot, preserving source bytes and draft status', async (t) => {
+test('exports a snapshot with its thumbnail bytes, metadata and draft status', async (t) => {
   const {root, entry} = await fixture(t);
   const bundle = await exportWebsite({sourceRoot: root, revision});
   assert.equal(bundle.sourceRevision, revision);
   assert.equal(bundle.sourceRepository, 'cradle-lang/scenario-lib');
-  assert.deepEqual(Object.keys(bundle.scenarios[0]).sort(), ['article', 'id', 'spec']);
+  assert.deepEqual(Object.keys(bundle.scenarios[0]).sort(), ['article', 'assets', 'id', 'spec']);
+  assert.deepEqual(bundle.scenarios[0].assets, [{path: 'picture.png', base64: Buffer.from([0, 128, 255]).toString('base64')}]);
   assert.equal(bundle.scenarios[0].id, 'railway');
   assert.equal(bundle.scenarios[0].spec, await readFile(path.join(entry, 'scenario.cradle'), 'utf8'));
   assert.equal(bundle.catalog[0].id, bundle.scenarios[0].id);
@@ -38,14 +39,25 @@ test('exports a named two-file snapshot, preserving source bytes and draft statu
   const article = bundle.scenarios[0].article;
   const data = parseDocument(article.match(/^---\n([\s\S]*?)\n---/)[1]).toJS();
   assert.equal(data.draft, true);
-  assert.equal(data.thumbnail, undefined);
-  assert.equal(data.thumbnailAlt, undefined);
+  assert.equal(data.thumbnail, './picture.png');
+  assert.equal(data.thumbnailAlt, 'Diagram');
   assert.equal(data.sourceUrl, bundle.catalog[0].sourceUrl);
   assert.match(article, /\[Source\]\(\.\/scenario\.cradle\)/);
   assert.ok(article.includes(`/blob/${revision}/scenarios/railway/README.md`));
   assert.ok(article.includes(`/tree/${revision}/scenarios/railway/configs`));
   assert.match(article, /\[Diagram \(source image\)\]/);
   assert.doesNotMatch(article, /!\[Diagram\]/);
+});
+
+test('rejects missing or unsafe thumbnail files and missing alt text', async t => {
+  const {root, entry} = await fixture(t);
+  const original = await readFile(path.join(entry, 'index.md'), 'utf8');
+  for (const thumbnail of ['./missing.png', '../outside.png', 'C:/outside.png', './configs/setup.yml']) {
+    await writeFile(path.join(entry, 'index.md'), original.replace('./picture.png', thumbnail));
+    await assert.rejects(exportWebsite({sourceRoot: root, revision}));
+  }
+  await writeFile(path.join(entry, 'index.md'), original.replace('thumbnailAlt: Diagram\n', ''));
+  await assert.rejects(exportWebsite({sourceRoot: root, revision}), /thumbnail/);
 });
 
 test('bundles all scenario folders including drafts, excluding only validation-smoke-test', async (t) => {
@@ -66,7 +78,7 @@ test('bundles all scenario folders including drafts, excluding only validation-s
   assert.match(bundle.scenarios.find(({id}) => id === 'published').article, /draft: false/);
   assert.match(bundle.scenarios.find(({id}) => id === 'railway').article, /draft: true/);
   for (const scenario of bundle.scenarios) {
-    assert.deepEqual(Object.keys(scenario).sort(), ['article', 'id', 'spec']);
+    assert.deepEqual(Object.keys(scenario).sort(), ['article', 'assets', 'id', 'spec']);
     assert.equal(scenario.spec, await readFile(path.join(root, 'scenarios', scenario.id, 'scenario.cradle'), 'utf8'));
     assert.match(scenario.article, /title: Railway/);
   }

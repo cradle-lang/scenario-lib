@@ -45,10 +45,7 @@ export async function exportArticle(article, {sourceRoot, entryRoot, revision, e
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Article front matter must be a mapping');
   for (const key of ['title', 'description']) if (typeof data[key] !== 'string' || !data[key].trim()) throw new Error(`Article requires ${key}`);
   if (data.draft !== undefined && typeof data.draft !== 'boolean') throw new Error('Article draft must be a boolean');
-  // The website copy contains exactly two files. Keep source artwork in the
-  // library and let the website select its built-in card illustration.
-  delete data.thumbnail;
-  delete data.thumbnailAlt;
+  // Thumbnail metadata travels with its image in the website bundle.
   const sourceUrl = `https://github.com/${repository}/tree/${revision}/${path.relative(sourceRoot, entryRoot).split(path.sep).map(encodeURIComponent).join('/')}`;
   data.sourceUrl = sourceUrl;
   const body = article.replace(/^\uFEFF/, '').slice(match[0].length);
@@ -124,7 +121,17 @@ export async function exportWebsite({sourceRoot = root, revision} = {}) {
     if (!spec.trim()) throw new Error(`${entry.name}: empty CRADLE source`);
     const websiteMarkdown = websiteArticle(scenario);
     const article = await exportArticle(websiteMarkdown, {sourceRoot, entryRoot, revision, entrypoint: scenario.entrypoint});
-    bundle.scenarios.push({id: entry.name, spec, article});
+    const record = {id: entry.name, spec, article};
+    const {metadata} = frontMatter(article, `${entry.name}/index.md`);
+    if (metadata.thumbnail !== undefined) {
+      const thumbnail = metadata.thumbnail;
+      if (typeof thumbnail !== 'string' || /[\\?#]/.test(thumbnail) || path.isAbsolute(thumbnail) || !/\.(png|jpe?g|webp|gif|svg|avif)$/i.test(thumbnail) || typeof metadata.thumbnailAlt !== 'string' || !metadata.thumbnailAlt.trim()) throw new Error(`${entry.name}: invalid thumbnail metadata`);
+      const filename = path.resolve(entryRoot, decodeURIComponent(thumbnail));
+      const info = await lstat(filename);
+      if (!inside(entryRoot, filename) || !info.isFile() || !inside(entryRoot, await realpath(filename)) || info.size > 5 * 1024 * 1024) throw new Error(`${entry.name}: thumbnail must be a regular image inside the scenario, at most 5 MiB`);
+      record.assets = [{path: path.relative(entryRoot, filename).split(path.sep).join('/'), base64: (await readFile(filename)).toString('base64')}];
+    }
+    bundle.scenarios.push(record);
     bundle.catalog.push(catalogEntry(entry.name, websiteMarkdown, spec, revision));
   }
   return bundle;
@@ -137,6 +144,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const output = path.join(root, 'website-export/bundle.json');
     await mkdir(path.dirname(output), {recursive: true});
     await writeFile(output, `${JSON.stringify(bundle, null, 2)}\n`);
-    console.log(`Exported ${bundle.scenarios.length} scenario(s), each containing only scenario.cradle and index.md.`);
+    console.log(`Exported ${bundle.scenarios.length} scenario(s), including their thumbnail images.`);
   } catch (error) {console.error(error.message); process.exitCode = 1;}
 }

@@ -67,7 +67,7 @@ jobs:
             --cve-library "$GITHUB_WORKSPACE/cradle-lib-cve" \
             --scenario "$SCENARIO" \
             --output "$GITHUB_WORKSPACE/scenario-output"
-      - name: Export the two-file website snapshot
+      - name: Export the website snapshot with thumbnails
         run: |
           export SOURCE_ROOT="$GITHUB_WORKSPACE/content"
           export SOURCE_REVISION="$(git -C content rev-parse HEAD)"
