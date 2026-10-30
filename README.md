@@ -149,7 +149,7 @@ images and can select one as the thumbnail. If it omits a thumbnail, the generat
 automatically picks a local image, preferring preview/thumbnail/cover/topology/diagram
 filenames, then shallower paths and alphabetical order. A neutral alt label is
 used because image contents are not inspected. Without images, built-in artwork
-remains available. Website export uses built-in artwork rather than copying images.
+remains available. Website export preserves thumbnail metadata and copies the selected image.
 
 Keep `draft: true` while preparing the article; change it to `draft: false` when
 ready for website publication. Drafts remain in the root catalogue and undergo
@@ -373,7 +373,7 @@ and enter a scenario ID or leave it empty for all scenarios. The workflow must
 be committed to the default branch for manual dispatch to appear.
 
 `scenario-validation` contains the compiler/reference reports. `website-scenarios`
-contains the two-file snapshot and is retained for 14 days. Scenario failures
+contains the scenario snapshot with thumbnail images and is retained for 14 days. Scenario failures
 produce failed checks and reports; installation/setup failures appear in logs.
 Use branch protection to require the relevant checks before merging.
 
@@ -428,11 +428,13 @@ cradle-lang.github.io/library/scenarios/railway/
   index.md
 ```
 
-Each synced website folder contains exactly `scenario.cradle` and `index.md`.
+Each synced website folder contains `scenario.cradle`, `index.md` and its optional thumbnail image.
 `validation-smoke-test` is never included in the website bundle.
 The JSON bundle keeps two arrays sorted by stable folder ID:
 
-- `scenarios`: `{id, spec, article}`, the contents of the two website files.
+- `scenarios`: `{id, spec, article, assets?}`, the website files and optional thumbnail.
+  Each asset is `{path, base64}`: a relative image path and its base64-encoded bytes
+  (at most 5 MiB). `thumbnail` and `thumbnailAlt` remain in the article front matter.
 - `catalog`: `{id, sourceUrl, title, description, source, category, requirements, tags, draft, searchText}`,
   for search results and filters without parsing Markdown or CRADLE.
 
@@ -444,7 +446,7 @@ contains the same URL, replacing stale authored source URLs. The commit in the
 link matches the validated snapshot and provides access to supporting files.
 The `catalog`
 field is an additive extension to bundle schema version 1; the existing
-`scenarios` records retain their original shape. Missing tags become `[]` and
+`scenarios` records add optional thumbnail assets. Missing tags become `[]` and
 missing draft flags become `false`. Display metadata preserves its case;
 `searchText` combines the metadata, visible article text and CRADLE source,
 normalized with Unicode NFKC, lowercase and collapsed whitespace. Link URLs
@@ -467,7 +469,8 @@ const filesById = new Map(bundle.scenarios.map(entry => [entry.id, entry]));
 The CRADLE contents and folder ID are preserved, including when a native named
 entrypoint is exported. Native README articles are converted to the website
 format. Supporting-file links point to the source commit, image embeds become
-source-image links, and custom thumbnails are omitted. Draft flags remain intact.
+source-image links. Custom thumbnail metadata and image bytes are preserved.
+Draft flags remain intact.
 An MDX article must be converted to `index.md` before export.
 
 Other website entries are preserved. Removing a source scenario does not remove

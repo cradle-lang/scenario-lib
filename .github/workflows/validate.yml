@@ -47,7 +47,7 @@ jobs:
         env:
           SCENARIO: ${{ inputs.scenario }}
         run: npm run library:validate -- --library .ci/cradle-lib --cve-library .ci/cradle-lib-cve --scenario "$SCENARIO"
-      - name: Export the two-file website snapshot
+      - name: Export the website snapshot with thumbnails
         run: npm run library:export-website
       - uses: actions/upload-artifact@v4
         with:
