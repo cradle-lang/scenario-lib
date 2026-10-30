@@ -1,0 +1,53 @@
+# This is the config file template for the railway system module <RailwayPWSimuRun.py>
+# Setup the parameters with below format (every line follow <key>:<value> format, the
+# key can not be changed):
+
+#-----------------------------------------------------------------------------
+# Config section 0: Basic general parameter config.
+
+# Test mode flag:
+# - True: use the physical word internal code to simulate the control logic. 
+# - False: connect to PLC and let PLC(s) control all the signals and trains.
+# TEST_MD:True
+TEST_MD:False
+
+# Init the data manager UDP port for PLCs to fetch and set data. 
+UDP_PORT:3001
+
+# Init Plc connection timeout(sec), if plc is not connect in num of seconds, the system will
+# treat it as offline (lose connection).
+PLC_TIMEOUT:3
+
+#-----------------------------------------------------------------------------
+# Config section 1: UI and control flags
+
+# define UI title name 
+UI_TITLE:2D Land Based Subway System Physical World Simulator
+
+# Init the UI update interval(sec per one update frame)
+UI_INTERVAL:2
+
+# Init Control parameters
+# Trains auto collision avoidance flag.
+COLL_AVOID:True
+
+# Trains Junction auto correct flag.(Check junction state and auto correct wrong PLC signal)
+JUNC_AVOID:True
+
+# Subway 3rd track power flag, all trains will power fail if set to False.
+TRACK_PWR:True
+
+# Set train dock time(sec): ==0 train will stay in station with a random Interval, > 0 num 
+# of time circle train will stay in 
+DOCK_TIME:5
+
+#-----------------------------------------------------------------------------
+# Config section 2: other files and path
+
+# Train location scenario config json storage folder name.
+TR_CFG_FOLDER:TrainLocation
+
+# Subway station name config json files
+WE_STATION_CFG:welineStations_new.json
+NC_STATION_CFG:nslineStations_new.json
+CC_STATION_CFG:cclineStations_new.json

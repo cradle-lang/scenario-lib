@@ -1,0 +1,64 @@
+[
+    {
+        "id": "Glimmer",
+        "pos": [
+            360,
+            700
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Haven",
+        "pos": [
+            200,
+            260
+        ],
+        "layout": 6,
+        "signalLayout": 1,
+        "labelPos": [
+            20,
+            -10
+        ]
+    },
+    {
+        "id": "Icaris",
+        "pos": [
+            910,
+            200
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Casper",
+        "pos": [
+            1400,
+            600
+        ],
+        "layout": 6,
+        "signalLayout": 0,
+        "labelPos": [
+            20,
+            -10
+        ]
+    },
+    {
+        "id": "Kendry",
+        "pos": [
+            1160,
+            700
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Lunaris",
+        "pos": [
+            710,
+            700
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    }
+]

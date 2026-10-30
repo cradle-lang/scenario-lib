@@ -1,0 +1,104 @@
+[
+    {
+        "id": "Tuas_Link",
+        "pos": [
+            80,
+            200
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Jurong_East",
+        "pos": [
+            360,
+            600
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Outram_Park",
+        "pos": [
+            750,
+            800
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "City_Hall",
+        "pos": [
+            900,
+            500
+        ],
+        "layout": 6,
+        "signalLayout": 1,
+        "labelPos": [
+            -70,
+            -10
+        ]
+    },
+    {
+        "id": "Paya_Lebar",
+        "pos": [
+            1250,
+            400
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Changi_Airport",
+        "pos": [
+            1550,
+            430
+        ],
+        "layout": 6,
+        "signalLayout": 0,
+        "labelPos": [
+            -70,
+            -60
+        ]
+    },
+    {
+        "id": "Lavender",
+        "pos": [
+            1100,
+            450
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Raffles_Place",
+        "pos": [
+            850,
+            850
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Clementi",
+        "pos": [
+            430,
+            650
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Boon_Lay",
+        "pos": [
+            50,
+            450
+        ],
+        "layout": 6,
+        "signalLayout": 1,
+        "labelPos": [
+            20,
+            -10
+        ]
+    }
+]

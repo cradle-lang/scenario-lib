@@ -1,0 +1,50 @@
+    - name: Create railway-rtu-simulator-train role directory
+      ansible.builtin.file:
+        path: /opt/railway/roles/rtu-train
+        state: directory
+        mode: "0755"
+      become: yes
+
+    - name: Install railway-rtu-simulator-train files
+      ansible.builtin.copy:
+        src: "{{ config_asset_dir }}/files/"
+        dest: /opt/railway/roles/rtu-train/
+        mode: preserve
+      become: yes
+
+    - name: Install railway-rtu-simulator-train systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Railway railway-rtu-train
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/opt/railway/roles/rtu-train
+          Environment=PYTHONPATH=/opt/railway/lib:/opt/railway/runtime
+          ExecStart=/usr/bin/python3 /opt/railway/roles/rtu-train/rtuSimulatorTrain.py
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/railway-rtu-train.service
+        mode: "0644"
+      become: yes
+
+    - name: Start railway-rtu-simulator-train
+      ansible.builtin.systemd:
+        name: railway-rtu-train
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+      become: yes
+
+    - name: Verify railway-rtu-simulator-train network port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 102
+        timeout: 60

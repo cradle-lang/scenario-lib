@@ -1,0 +1,192 @@
+// Railway ICS cyber-range test case for the OpenStack backend.
+//
+// Infrastructure layout is derived from Cyber-range-deployment-system-2.
+// Application provisioning is split into reusable role-oriented configs.
+
+metadata() >
+    name("Railway"),
+    eventType("sequence").
+
+instances() >
+    instance("Fw-rail"),
+    instance("rail-ED-plc01-rail"),
+    instance("rail-ED-plc02-rail"),
+    instance("rail-ED-plc03-rail"),
+    instance("rail-ED-plc04-rail"),
+    instance("rail-ED-rtu01-rail"),
+    instance("rail-md-pw-rail"),
+    instance("rail-op-sm-rail"),
+    instance("rail-op-tc-rail"),
+    instance("rail-op-tb-rail").
+
+instance("Fw-rail") >
+    os("ubuntu", "22.04"),
+    // Intentional negative test: no bundled or shared module has this name.
+    config("railway-intentionally-missing-config"),
+    config("linux-router").
+
+instance("rail-ED-plc01-rail") >
+    os("ubuntu", "22.04"),
+    config("linux-python3"),
+    config("python3-pip"),
+    config("python-modbus-tcp"),
+    config("python-influxdb"),
+    config("railway-simulator-core-linux"),
+    config("railway-influxdb-handler-linux"),
+    config("railway-modbus-tcp-lib-linux"),
+    config("railway-udp-comm-linux"),
+    config("railway-physical-world-comm-linux"),
+    config("railway-pyarmor-runtime-linux"),
+    config("railway-plc-simulator-signal").
+
+instance("rail-ED-plc02-rail") >
+    os("ubuntu", "22.04"),
+    config("linux-python3"),
+    config("python3-pip"),
+    config("python-modbus-tcp"),
+    config("python-influxdb"),
+    config("railway-simulator-core-linux"),
+    config("railway-influxdb-handler-linux"),
+    config("railway-modbus-tcp-lib-linux"),
+    config("railway-udp-comm-linux"),
+    config("railway-physical-world-comm-linux"),
+    config("railway-pyarmor-runtime-linux"),
+    config("railway-plc-simulator-station").
+
+instance("rail-ED-plc03-rail") >
+    os("ubuntu", "22.04"),
+    config("linux-python3"),
+    config("python3-pip"),
+    config("python-modbus-tcp"),
+    config("python-influxdb"),
+    config("railway-simulator-core-linux"),
+    config("railway-influxdb-handler-linux"),
+    config("railway-modbus-tcp-lib-linux"),
+    config("railway-udp-comm-linux"),
+    config("railway-physical-world-comm-linux"),
+    config("railway-pyarmor-runtime-linux"),
+    config("railway-plc-simulator-train").
+
+instance("rail-ED-plc04-rail") >
+    os("ubuntu", "22.04"),
+    config("linux-python3"),
+    config("python3-pip"),
+    config("python-modbus-tcp"),
+    config("python-influxdb"),
+    config("railway-simulator-core-linux"),
+    config("railway-influxdb-handler-linux"),
+    config("railway-modbus-tcp-lib-linux"),
+    config("railway-udp-comm-linux"),
+    config("railway-physical-world-comm-linux"),
+    config("railway-pyarmor-runtime-linux"),
+    config("railway-plc-simulator-block").
+
+instance("rail-ED-rtu01-rail") >
+    os("ubuntu", "22.04"),
+    config("linux-python3"),
+    config("python3-pip"),
+    config("python-snap7"),
+    config("python-influxdb"),
+    config("railway-simulator-core-linux"),
+    config("railway-influxdb-handler-linux"),
+    config("railway-snap7-comm-linux"),
+    config("railway-udp-comm-linux"),
+    config("railway-physical-world-comm-linux"),
+    config("railway-pyarmor-runtime-linux"),
+    config("railway-rtu-simulator-train").
+
+instance("rail-md-pw-rail") >
+    os("windows", "2019"),
+    config("win-power-option"),
+    config("win-python-runtime"),
+    config("python-modbus-tcp-win"),
+    config("python-influxdb-win"),
+    config("python-wxpython-win"),
+    config("railway-simulator-core-windows"),
+    config("railway-influxdb-handler-windows"),
+    config("railway-modbus-tcp-lib-windows"),
+    config("railway-udp-comm-windows"),
+    config("railway-physical-world-comm-windows"),
+    config("railway-pyarmor-runtime-windows"),
+    config("railway-physical-world-simulator").
+
+instance("rail-op-sm-rail") >
+    os("windows", "2019"),
+    config("win-power-option"),
+    config("win-python-runtime"),
+    config("python-modbus-tcp-win"),
+    config("python-influxdb-win"),
+    config("python-wxpython-win"),
+    config("railway-simulator-core-windows"),
+    config("railway-influxdb-handler-windows"),
+    config("railway-modbus-tcp-lib-windows"),
+    config("railway-hmi-image-loader-windows"),
+    config("railway-pyarmor-runtime-windows"),
+    config("railway-hmi-scada").
+
+instance("rail-op-tc-rail") >
+    os("windows", "2019"),
+    config("win-power-option"),
+    config("win-python-runtime"),
+    config("python-modbus-tcp-win"),
+    config("python-influxdb-win"),
+    config("python-snap7-win"),
+    config("python-wxpython-win"),
+    config("railway-simulator-core-windows"),
+    config("railway-influxdb-handler-windows"),
+    config("railway-modbus-tcp-lib-windows"),
+    config("railway-snap7-comm-windows"),
+    config("railway-hmi-image-loader-windows"),
+    config("railway-pyarmor-runtime-windows"),
+    config("railway-hmi-train").
+
+instance("rail-op-tb-rail") >
+    os("windows", "2019"),
+    config("win-power-option"),
+    config("win-python-runtime"),
+    config("python-modbus-tcp-win"),
+    config("python-influxdb-win"),
+    config("python-wxpython-win"),
+    config("railway-simulator-core-windows"),
+    config("railway-influxdb-handler-windows"),
+    config("railway-modbus-tcp-lib-windows"),
+    config("railway-hmi-image-loader-windows"),
+    config("railway-pyarmor-runtime-windows"),
+    config("railway-hmi-block").
+
+networks() >
+    network("hub"),
+    network("ed"),
+    network("md"),
+    // Intentional negative test: missing the terminating period for this block.
+    network("op")
+
+network("hub") >
+    subnet("10.107.110.0/24"),
+    endpoint("Fw-rail", "DHCP").
+
+network("ed") >
+    subnet("10.107.108.0/24"),
+    endpoint("Fw-rail", "10.107.108.4"),
+    endpoint("rail-ED-plc01-rail", "10.107.108.5"),
+    endpoint("rail-ED-plc02-rail", "10.107.108.6"),
+    endpoint("rail-ED-plc03-rail", "10.107.108.7"),
+    endpoint("rail-ED-plc04-rail", "10.107.108.8"),
+    endpoint("rail-ED-rtu01-rail", "10.107.108.9").
+
+network("md") >
+    subnet("10.107.109.0/24"),
+    endpoint("Fw-rail", "10.107.109.4"),
+    endpoint("rail-md-pw-rail", "10.107.109.5").
+
+network("op") >
+    subnet("10.107.121.0/24"),
+    endpoint("Fw-rail", "10.107.121.4"),
+    endpoint("rail-op-sm-rail", "10.107.121.10"),
+    endpoint("rail-op-tc-rail", "10.107.121.11"),
+    endpoint("rail-op-tb-rail", "10.107.121.12").
+
+events() >
+    preEvent(),
+    mainEvent(),
+    postEvent().
