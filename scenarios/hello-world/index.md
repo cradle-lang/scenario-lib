@@ -14,7 +14,7 @@ requirements: CXC build tools, an Ubuntu 20.04 image, Vagrant with libvirt or an
 artwork: network
 thumbnail: ./preview.svg
 thumbnailAlt: Hello World artwork (preview.svg)
-draft: true
+draft: false
 ---
 
 Hello World is a compact end-to-end CRADLE example for beginners. It demonstrates how to combine scenario-local configurations and heuristics with modules from the remote `cradle-lib` repository, then run a local object as an event. The scenario is testbed-independent and has no committed deployment profile.

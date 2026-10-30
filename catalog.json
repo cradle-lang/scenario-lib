@@ -13,7 +13,7 @@
       "version": "0.1.0",
       "entrypoint": "HelloWorld.cradle",
       "path": "scenarios/hello-world",
-      "draft": true,
+      "draft": false,
       "preview": "preview.svg"
     },
     {
