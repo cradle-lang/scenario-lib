@@ -151,3 +151,9 @@ test('requires a full revision and an index.md article for the website contract'
   await writeFile(path.join(entry, 'index.mdx'), 'MDX source');
   await assert.rejects(exportWebsite({sourceRoot: root, revision}), /use index.md rather than MDX/);
 });
+
+test('rejects poor exported Markdown before producing a website handoff', async t => {
+  const {root, entry} = await fixture(t);
+  await writeFile(path.join(entry, 'index.md'), '---\ntitle: Railway\ndescription: Example\n---\n\n```\nunlabeled code block\n```\n');
+  await assert.rejects(exportWebsite({sourceRoot: root, revision}), /scenarios\/railway\/index.md:\d+ MD040/);
+});

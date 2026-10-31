@@ -554,3 +554,17 @@ Implementation modules used by a scenario belong in its `configs/` or
 `heuristics/` folder, or in cradle-lib; a documentation article alone does not
 make a module available to CXC. The scenario website handoff exports scenarios,
 not these standalone resource articles.
+
+## Documentation quality
+
+Run `npm run docs:check` before submitting. It checks Markdown and MDX using the
+same `.markdownlint.json` rules as the website, including new unstaged documents.
+Ignored/generated files and CI dependency checkouts are excluded. Errors identify
+the file, line and rule; fix the source rather than weakening the rules.
+
+GitHub exposes a separate **Docs Quality / markdownlint** check on PRs, main pushes
+and manual runs. `npm run check` also runs it before validation and website export,
+so documentation-quality failures prevent the automated website handoff.
+
+Manual revision validation checks the selected source checkout. The scenario
+exporter also lints its final rewritten website articles before writing a bundle.

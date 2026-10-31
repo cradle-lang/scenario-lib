@@ -15,12 +15,16 @@
     "library:check": "node scripts/check-library.mjs",
     "library:catalog": "node scripts/check-library.mjs --catalog",
     "test": "node --test scripts/*.test.mjs",
-    "check": "npm run library:check && npm run catalog:check && npm test",
+    "check": "npm run docs:check && npm run library:check && npm run catalog:check && npm test",
     "catalog:check": "node scripts/catalog.mjs",
-    "catalog:update": "node scripts/catalog.mjs --update"
+    "catalog:update": "node scripts/catalog.mjs --update",
+    "docs:check": "node scripts/check-docs.mjs"
   },
   "dependencies": {
     "mdast-util-from-markdown": "^2.1.0",
     "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "markdownlint": "0.38.0"
   }
 }

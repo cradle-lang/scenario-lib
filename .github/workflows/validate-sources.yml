@@ -51,6 +51,8 @@ jobs:
         run: npm run test:validation --prefix tooling
       - name: Check library metadata
         run: node --input-type=module -e "import {readLibrary} from './tooling/scripts/check-library.mjs'; await readLibrary('./content');"
+      - name: Check selected source documentation quality
+        run: node tooling/scripts/check-docs.mjs --source "$GITHUB_WORKSPACE/content"
       - name: Install CradleXC from the official APT repository
         run: |
           echo 'deb [trusted=yes] https://repo.cradle-lang.org/apt/ /' | sudo tee /etc/apt/sources.list.d/cradle.list

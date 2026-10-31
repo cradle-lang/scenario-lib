@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseDocument, stringify} from 'yaml';
 import {fromMarkdown} from 'mdast-util-from-markdown';
+import {checkMarkdown} from './check-docs.mjs';
 import {frontMatter, readScenario, websiteArticle} from './scenario-layout.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -101,7 +102,7 @@ export async function exportArticle(article, {sourceRoot, entryRoot, revision, e
   await visit(tree);
   let rewritten = body;
   for (const replacement of replacements.sort((a, b) => b.start - a.start)) rewritten = rewritten.slice(0, replacement.start) + replacement.text + rewritten.slice(replacement.end);
-  if (!/\]\(\s*<?\.\/scenario\.cradle>?\s*\)/.test(rewritten)) rewritten += '\n\n[Download the specification](./scenario.cradle).\n';
+  if (!/\]\(\s*<?\.\/scenario\.cradle>?\s*\)/.test(rewritten)) rewritten = rewritten.trimEnd() + '\n\n[Download the specification](./scenario.cradle).\n';
   return `---\n${stringify(data)}---\n${rewritten.trimEnd()}\n\n[Full scenario folder and supporting files](<${sourceUrl}>). Supporting files remain in the source repository and may require GitHub access.\n`;
 }
 
@@ -134,6 +135,7 @@ export async function exportWebsite({sourceRoot = root, revision} = {}) {
     bundle.scenarios.push(record);
     bundle.catalog.push(catalogEntry(entry.name, websiteMarkdown, spec, revision));
   }
+  await checkMarkdown(Object.fromEntries(bundle.scenarios.map(entry => [`scenarios/${entry.id}/index.md`, entry.article])));
   return bundle;
 }
 

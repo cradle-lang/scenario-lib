@@ -58,4 +58,3 @@ creates `/tmp/hello-world-event.txt`.
 
 Both CVE heuristics use Docker images downloaded during provisioning, so the
 target VM needs network access at that stage.
-
