@@ -1,0 +1,50 @@
+[
+    {
+        "id": "Jurong_East",
+        "pos": [
+            360,
+            450
+        ],
+        "signalLayout": 3
+    },
+    {
+        "id": "Woodlands",
+        "pos": [
+            430,
+            50
+        ],
+        "signalLayout": 2
+    },
+    {
+        "id": "Yishun",
+        "pos": [
+            1040,
+            50
+        ],
+        "signalLayout": 2
+    },
+    {
+        "id": "Orchard",
+        "pos": [
+            980,
+            300
+        ],
+        "signalLayout": 3
+    },
+    {
+        "id": "City_Hall",
+        "pos": [
+            750,
+            600
+        ],
+        "signalLayout": 3
+    },
+    {
+        "id": "Bishan",
+        "pos": [
+            550,
+            100
+        ],
+        "signalLayout": 3
+    }
+]

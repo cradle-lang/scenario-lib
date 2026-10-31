@@ -17,6 +17,20 @@
       "preview": "preview.svg"
     },
     {
+      "id": "railway-failed-validation",
+      "title": "Railway validation failure test",
+      "description": "Intentionally broken Railway contribution exercising missing configs and malformed CRADLE structure.",
+      "tags": [
+        "Railway",
+        "Validation",
+        "Negative-Test"
+      ],
+      "version": "0.1.0",
+      "entrypoint": "Railway.cradle",
+      "path": "scenarios/railway-failed-validation",
+      "draft": true
+    },
+    {
       "id": "validation-smoke-test",
       "title": "Validation workflow smoke test",
       "description": "A minimal draft scenario for testing compiler and shared content checks in CI.",

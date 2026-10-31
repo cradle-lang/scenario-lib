@@ -1,0 +1,8 @@
+    - name: Create Railway application root
+      ansible.windows.win_file:
+        path: C:\Railway\
+        state: directory
+    - name: Install railway-hmi-image-loader-windows files
+      ansible.windows.win_copy:
+        src: "{{ config_asset_dir }}/files/"
+        dest: C:\Railway\

@@ -1,0 +1,33 @@
+# This is the config file template for the module <plcSimulatorBlock.py>
+# Setup the parameter with below format (every line follow <key>:<value> format, the
+# key can not be changed):
+
+#-----------------------------------------------------------------------------
+# Set the master PLC's name 
+PLC_NAME:PLC-08
+
+#-----------------------------------------------------------------------------
+# Define the IP addresses allowed to read PLC state: 
+# json list format: ["masterIP", "slave1IP", …]
+ALLOW_R_L:["127.0.0.1", "192.168.0.10"]
+
+# Define the IP addresses allowed to change PLC state: 
+# json list format: ["masterIP", "slave1IP", …]
+ALLOW_W_L:["127.0.0.1"]
+
+#-----------------------------------------------------------------------------
+# Define physical world simulator IP address.
+RW_IP:127.0.0.1
+
+# Define physical world simulator connection port.
+RW_PORT:3001
+
+# Define PLC internal clock interval
+CLK_INT:0.6
+
+#-----------------------------------------------------------------------------
+# Define Modbus-TCP host IP, use 0.0.0.0 or localhost
+MD_BUS_IP:0.0.0.0
+
+# Define Modbus-TCP host Port, normally use 502
+MD_BUS_PORT:502

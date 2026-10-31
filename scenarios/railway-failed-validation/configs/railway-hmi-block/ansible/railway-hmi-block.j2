@@ -1,0 +1,45 @@
+    - name: Create railway-hmi-block role directory
+      ansible.windows.win_file:
+        path: 'C:\Railway\roles\hmi-block'
+        state: directory
+
+    - name: Install railway-hmi-block files
+      ansible.windows.win_copy:
+        src: "{{ config_asset_dir }}/files/"
+        dest: 'C:\Railway\roles\hmi-block\'
+
+    - name: Install railway-hmi-block launcher
+      ansible.windows.win_copy:
+        content: |
+          @echo off
+          set "PYTHONPATH=C:\Railway\lib;C:\Railway\runtime"
+          cd /d "C:\Railway\roles\hmi-block"
+          "C:\ProgramData\cxc\python\python.exe" "C:\Railway\roles\hmi-block\TrackBlockHMIRun.py"
+        dest: 'C:\Railway\roles\hmi-block\run.cmd'
+
+    - name: Register and start railway-hmi-block
+      ansible.windows.win_shell: |
+        $taskName = "Railway-hmi-block"
+        $action = New-ScheduledTaskAction -Execute "cmd.exe" `
+          -Argument '/c "C:\Railway\roles\hmi-block\run.cmd"' -WorkingDirectory 'C:\Railway\roles\hmi-block'
+        $trigger = New-ScheduledTaskTrigger -AtStartup
+        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+          -LogonType ServiceAccount -RunLevel Highest
+        $settings = New-ScheduledTaskSettingsSet -RestartCount 999 `
+          -RestartInterval (New-TimeSpan -Minutes 1) `
+          -ExecutionTimeLimit (New-TimeSpan -Days 365)
+        Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false `
+          -ErrorAction SilentlyContinue
+        Register-ScheduledTask -TaskName $taskName -Action $action `
+          -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+        Start-ScheduledTask -TaskName $taskName
+        Start-Sleep -Seconds 3
+
+    - name: Verify railway-hmi-block process is running
+      ansible.windows.win_shell: |
+        $process = Get-CimInstance Win32_Process |
+          Where-Object { $_.CommandLine -like '*TrackBlockHMIRun.py*' }
+        if (-not $process) {
+          throw "Railway railway-hmi-block process is not running"
+        }
