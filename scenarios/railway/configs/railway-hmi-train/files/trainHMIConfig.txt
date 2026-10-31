@@ -1,0 +1,47 @@
+# This is the config file template for the module <TrainCtrlHMIRun.py>
+# Setup the parameter with below format (every line follows <key>:<val> format, the
+# key can not be changed):
+
+#-----------------------------------------------------------------------------
+# Test mode:
+# - True: run the UI with out connect to the PLC modules.
+# - False: connect to PLC via Modbus-TCP, fetch and set the PLC real state.
+TEST_MD:False
+
+#-----------------------------------------------------------------------------
+# Define all the HMI UI config parameters
+
+# define UI title name 
+UI_TITLE:Subway System Trains Controller HMI
+
+# Define UI update clock interval (seconds)
+CLK_INT:2
+
+#-----------------------------------------------------------------------------
+# Init the PLC(need to connect) information 
+PLC_ID:PLC-06
+
+# Target PLC IP address 
+PLC_IP:10.107.108.7
+
+# Target PLC Modbus-TCP port (default 502)
+PLC_PORT:504
+#PLC_PORT:502
+
+#-----------------------------------------------------------------------------
+# Init the RTU(need to connect) information 
+RTU_ID:RTU-01-10
+
+# Target RTU IP address 
+RTU_IP:10.107.108.9
+
+# Target RTU Port (default 102) 
+RTU_PORT:102
+
+#-----------------------------------------------------------------------------
+# Define 10 trains power in a list, true: init power on, false: init power off
+# sequence: weline(0-4) 0 - 4, nsline(0-3) 4 - 7, ccline(0-3) 7 - 10  
+TRAINS_PWR:[true, true, true, true, true, true, true, true, true, true]
+
+# Train collision auto avoidance config
+AUTO_CA:True

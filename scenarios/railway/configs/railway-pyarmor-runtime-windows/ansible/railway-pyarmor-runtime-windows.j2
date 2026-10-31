@@ -1,0 +1,4 @@
+    - name: Install Railway PyArmor runtime
+      ansible.windows.win_copy:
+        src: "{{ config_asset_dir }}/files/pyarmor_runtime_006342"
+        dest: C:\Railway\runtime\

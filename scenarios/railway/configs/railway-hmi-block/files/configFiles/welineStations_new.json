@@ -1,0 +1,104 @@
+[
+    {
+        "id": "Mystra",
+        "pos": [
+            80,
+            200
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Nivara",
+        "pos": [
+            360,
+            600
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Orinth",
+        "pos": [
+            750,
+            800
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Pallas",
+        "pos": [
+            900,
+            500
+        ],
+        "layout": 6,
+        "signalLayout": 1,
+        "labelPos": [
+            -70,
+            -10
+        ]
+    },
+    {
+        "id": "Quillon",
+        "pos": [
+            1250,
+            400
+        ],
+        "layout": 5,
+        "signalLayout": 2
+    },
+    {
+        "id": "Ravelle",
+        "pos": [
+            1550,
+            430
+        ],
+        "layout": 6,
+        "signalLayout": 0,
+        "labelPos": [
+            -70,
+            -60
+        ]
+    },
+    {
+        "id": "Saber",
+        "pos": [
+            1100,
+            450
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Tarin",
+        "pos": [
+            850,
+            850
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Ulric",
+        "pos": [
+            430,
+            650
+        ],
+        "layout": 5,
+        "signalLayout": 3
+    },
+    {
+        "id": "Vesper",
+        "pos": [
+            50,
+            450
+        ],
+        "layout": 6,
+        "signalLayout": 1,
+        "labelPos": [
+            20,
+            -10
+        ]
+    }
+]

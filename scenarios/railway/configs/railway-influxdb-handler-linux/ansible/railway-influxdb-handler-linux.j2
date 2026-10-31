@@ -1,0 +1,11 @@
+    - name: Create Railway application root
+      ansible.builtin.file:
+        path: /opt/railway/
+        state: directory
+      become: yes
+    - name: Install railway-influxdb-handler-linux files
+      ansible.builtin.copy:
+        src: "{{ config_asset_dir }}/files/"
+        dest: /opt/railway/
+        mode: preserve
+      become: yes
